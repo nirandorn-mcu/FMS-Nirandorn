@@ -1,6 +1,9 @@
-import { LayoutDashboard, Users, Settings, Layers, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Banknote, GraduationCap, FolderKanban, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
+import { ADVANCE_P } from "@/features/advance-payment";
+import { PETITION_P } from "@/features/student-petition";
+import { PROJECT_P } from "@/features/project-budget";
 
 export interface NavItem {
   /** i18n key */
@@ -16,6 +19,18 @@ export interface NavCrumb { title: string; href: string }
 
 export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    label: "project.nav",
+    items: [{ title: "project.nav", href: "/projects", icon: FolderKanban, permission: PROJECT_P.projectRead }],
+  },
+  {
+    label: "petition.nav",
+    items: [{ title: "petition.nav", href: "/petitions", icon: GraduationCap, permission: PETITION_P.petitionRead }],
+  },
+  {
+    label: "advance.nav",
+    items: [{ title: "advance.nav", href: "/advance-payment", icon: Banknote, permission: ADVANCE_P.advanceRead }],
+  },
   {
     label: "nav.group.sample",
     items: [{ title: "sample.nav", href: "/sample", icon: Layers, permission: SAMPLE_P.sampleRead }],

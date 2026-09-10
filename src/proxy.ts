@@ -18,7 +18,9 @@ export async function proxy(req: NextRequest) {
     return loggedIn ? NextResponse.redirect(new URL("/dashboard", req.url)) : NextResponse.next();
   }
   if (pathname === "/") {
-    return NextResponse.redirect(new URL(loggedIn ? "/dashboard" : "/login", req.url));
+    const headers = new Headers(req.headers);
+    headers.set(CURRENT_PATH_HEADER, pathname + search);
+    return NextResponse.next({ request: { headers } });
   }
   if (!loggedIn) {
     const login = new URL("/login", req.url);
