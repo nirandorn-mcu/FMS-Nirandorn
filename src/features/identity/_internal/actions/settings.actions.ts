@@ -13,6 +13,25 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { errors } from "@/shared/lib/errors";
 
+import { prisma } from "@/shared/lib/infra/prisma";
+import { isPalette, DEFAULT_PALETTE } from "@/shared/lib/palette";
+
+export async function getTenantInfoAction(): Promise<ActionResult<{ nameTh: string; nameEn: string; logoUrl: string | null; palette: string }>> {
+  return runAction(async () => {
+    const t = await prisma.tenant.findFirst({ orderBy: { createdAt: "asc" } });
+    if (!t) {
+      return { nameTh: "คณะวิทยาการจัดการ", nameEn: "Faculty of Management Sciences", logoUrl: null, palette: "blue" };
+    }
+    const p = (t.settings as { palette?: unknown })?.palette;
+    return {
+      nameTh: t.nameTh,
+      nameEn: t.nameEn,
+      logoUrl: t.logoUrl,
+      palette: isPalette(p) ? p : DEFAULT_PALETTE,
+    };
+  });
+}
+
 export async function getSettingsAction(): Promise<ActionResult<TenantSettings>> {
   return runAction(async () => getTenantSettings((await requirePermission(P.settingsManage)).tenantId));
 }

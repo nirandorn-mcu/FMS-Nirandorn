@@ -9,10 +9,12 @@ import { useT } from "@/shared/lib/i18n/client";
 import type { PaletteId } from "@/shared/lib/palette";
 import type { TenantSettings } from "@/features/identity";
 import { updateSettingsAction, uploadLogoAction } from "@/features/identity/actions";
+import { useTenantStore } from "@/components/layout/tenant-store";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
+  const setTenantInfo = useTenantStore((s) => s.setTenantInfo);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     nameTh: initial.nameTh,
@@ -32,6 +34,11 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
         if (!r.error.fieldErrors) toast.error(r.error.message || t(`error.${r.error.code}`));
         return;
       }
+      setTenantInfo({
+        nameTh: form.nameTh,
+        nameEn: form.nameEn,
+        logoUrl: form.logoUrl || null,
+      });
       setErrors({});
       toast.success(t("settings.saveOk"));
       router.refresh();

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Loader2, User, Settings } from "lucide-react";
@@ -12,6 +12,10 @@ import { useAppSession } from "@/hooks/use-session";
 import { useT, useLocale } from "@/shared/lib/i18n/client";
 import { localizedName } from "@/shared/lib/format";
 import { hasPermission, P } from "@/features/identity";
+import { getTenantInfoAction } from "@/features/identity/actions";
+import { useTenantStore } from "@/components/layout/tenant-store";
+
+const emptySubscribe = () => () => {};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,14 +24,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const tail = useBreadcrumbTailItems();
   const { status, user, roles, permissions, isSuperAdmin } = useAppSession();
   const { collapsed, toggleCollapsed } = useSidebarStore();
+  const { nameTh, nameEn, logoUrl, setTenantInfo } = useTenantStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [prev, setPrev] = useState(pathname);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   if (pathname !== prev) { setPrev(pathname); setDrawerOpen(false); }
-  // ธง mounted กัน hydration mismatch: เนื้อหาบางส่วน (ธีม, ค่าจาก sidebar store ที่อ่าน localStorage)
-  // ต่างกันระหว่างฝั่ง server กับ client จึงต้องรอ mount ก่อนค่อยเรนเดอร์ของจริง — เป็น setState ที่ตั้งใจ
-  // ให้เกิดครั้งเดียวตอน mount ซึ่งกฎนี้จับรวมโดยไม่แยกแยะ
-  useEffect(() => { setMounted(true); }, []); // eslint-disable-line react-hooks/set-state-in-effect
+
+  useEffect(() => {
+    getTenantInfoAction().then((res) => {
+      if (res.ok) {
+        setTenantInfo({ nameTh: res.data.nameTh, nameEn: res.data.nameEn, logoUrl: res.data.logoUrl });
+      }
+    });
+  }, [setTenantInfo]);
 
   if (!mounted || status === "loading") {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -42,9 +51,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ...(hasPermission(ctx, P.settingsManage) ? [{ href: "/settings", label: t("nav.settings"), icon: <Settings className="h-4 w-4" /> }] : []),
   ];
 
+  const brandName = (locale === "en" ? nameEn || nameTh : nameTh || nameEn) || t("app.name");
+  const brandTagline = (locale === "en" ? nameTh : nameEn) || t("app.tagline");
+
   return (
     <AdminShell
-      brandName={t("app.name")} brandTagline={t("app.tagline")} brandHref="/dashboard"
+      brandName={brandName}
+      brandTagline={brandTagline}
+      brandLogoUrl={logoUrl}
+      brandHref="/dashboard"
       breadcrumb={breadcrumb} breadcrumbLabel={t("common.breadcrumb")}
       roleLabel={roles[0] ? localizedName(roles[0], locale) : null}
       languageSwitcher={<LanguageSwitcher className="lang" />}

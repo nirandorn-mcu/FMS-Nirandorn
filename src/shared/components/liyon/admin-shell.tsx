@@ -27,6 +27,7 @@ export interface AdminShellProps {
   brandName: string;
   brandTagline: string;
   brandHref: string;
+  brandLogoUrl?: string | null;
   /** ชื่อหน้าปัจจุบัน (`.tenant` ใน navbar) — ว่างได้ถ้าหาไม่เจอ (ไม่ fallback เป็นค่าปลอม) */
   /** breadcrumb บน navbar — ขั้นสุดท้ายเป็น span[aria-current=page] (h1 เป็นของหัวหน้าในเนื้อหา) ขั้นก่อนหน้าเป็นลิงก์ · ว่าง = ไม่แสดง */
   breadcrumb: Crumb[];
@@ -58,25 +59,10 @@ export interface AdminShellProps {
 }
 
 /**
- * เปลือกฝั่งผู้ดูแลระบบ — primitive ตัวที่สี่ของ shared/components/liyon
- * Markup ตรงกับ `.adm` ของ Liyon-Admin-Dashboard.html / Liyon-Admin-Spec.html:
- * navbar เต็มความกว้างแถวบน (`.adm-head`) + sidebar การ์ดลอย (`.side`) +
- * พื้นที่ทำงาน (`.adm-body > .adm-main > .in`)
+ * โครงหน้าผู้ดูแลระบบ Liyon (.adm — liyon-admin.css) — primitive ตัวที่เก้าของ shared/components/liyon
  *
- * เหมือน SiteNav: เมนูอวตารใช้ Radix DropdownMenu แทน `<details>` ของ mockup เพื่อคง
- * focus handling — ใช้ primitive ของ radix-ui ตรง ๆ (ไม่ผ่าน shadcn wrapper ที่
- * src/components/ui/dropdown-menu.tsx) เพราะ dependency-cruiser ห้าม shared/ import
- * components/ (กติกา no-shared-to-features) เมนูจึงใช้คลาส `.menu-list` ของ
- * liyon-shell.css แทน `.acct-menu` — `.acct-menu` อิง position:absolute ของ mockup ที่
- * ไม่ได้พอร์ต ส่วน `.menu-list` เป็น position:fixed ที่ออกแบบมาให้ใช้กับเมนูลอยที่ JS/Popper
- * จัดตำแหน่งเองอยู่แล้ว (แบบเดียวกับ RowMenu ใน data-table.tsx) — ส่วนปุ่ม theme/hamburger/
- * collapse/bell ใช้ SVG
- * inline คัดลอกจาก mockup ตรง ๆ เพราะเป็นไอคอนที่ `.icon-btn > svg` ต้องมีรูป
- * ตรงตัวถึงจะดูเป็นชิ้นเดียวกับปุ่มอื่นในแถบเดียวกัน
- *
- * ไม่มี palette switcher ในนี้โดยตั้งใจ — ของจริง palette ผูกกับ
- * tenant.settings.palette ฝั่งเซิร์ฟเวอร์ ไม่ใช่ตัวสลับสดในหน้าเหมือน mockup
- * (เดียวกับที่ SiteNav ของฝั่ง public ไม่มี palette switcher เช่นกัน)
+ * รวม: navbar ด้านบน (.adm-head) + sidebar ด้านซ้าย (.adm-side) + เนื้อหาหลัก (.adm-main)
+ * ออกแบบให้ย่อขยายได้ (collapsed), เปิด drawer บนจอมือถือได้, และสลับโหมดสีได้ (next-themes)
  *
  * เนื้อหาเมนู sidebar เป็น slot (`sidebarNav`) ไม่ใช่ prop ข้อมูลโครงสร้าง —
  * ผู้เรียกต้องพึ่ง hook เฉพาะแอป (useAppSession/useIsFeatureLocked/
@@ -86,6 +72,7 @@ export function AdminShell({
   brandName,
   brandTagline,
   brandHref,
+  brandLogoUrl,
   breadcrumb,
   breadcrumbLabel,
   roleLabel,
@@ -113,10 +100,19 @@ export function AdminShell({
       <header className="adm-head">
         <Link className="brand-blk" href={brandHref}>
           <i>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M22 10 12 5 2 10l10 5 10-5Z" />
-              <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
-            </svg>
+            {brandLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandLogoUrl}
+                alt={brandName}
+                className="w-full h-full object-contain p-0.5 rounded-md"
+              />
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+                <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
+              </svg>
+            )}
           </i>
           <div className="t">
             <b>{brandName}</b>
