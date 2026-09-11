@@ -8,9 +8,15 @@ import { requirePermission } from "../rbac";
 import { updateSettingsSchema } from "../validations/settings";
 import { getTenantSettings, updateTenantSettings, type TenantSettings } from "../services/tenant.service";
 
+import fs from "node:fs/promises";
+import path from "node:path";
+import crypto from "node:crypto";
+import { errors } from "@/shared/lib/errors";
+
 export async function getSettingsAction(): Promise<ActionResult<TenantSettings>> {
   return runAction(async () => getTenantSettings((await requirePermission(P.settingsManage)).tenantId));
 }
+
 export async function updateSettingsAction(input: unknown): Promise<ActionResult<void>> {
   return runAction(async () => {
     const ctx = await requirePermission(P.settingsManage);
@@ -18,3 +24,43 @@ export async function updateSettingsAction(input: unknown): Promise<ActionResult
     revalidatePath("/", "layout"); // data-palette บน <html> อ่านใหม่
   });
 }
+
+export async function uploadLogoAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
+  return runAction(async () => {
+    await requirePermission(P.settingsManage);
+    const file = formData.get("file");
+    if (!file || !(file instanceof File)) {
+      throw errors.validation();
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml", "image/gif"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      throw new Error("ไฟล์ต้องเป็นรูปภาพ (JPEG, PNG, WebP, SVG หรือ GIF)");
+    }
+
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeBytes) {
+      throw new Error("ขนาดไฟล์ต้องไม่เกิน 5MB");
+    }
+
+    const extensionMap: Record<string, string> = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/svg+xml": ".svg",
+      "image/gif": ".gif",
+    };
+    const ext = extensionMap[file.type] || path.extname(file.name) || ".png";
+    const filename = `logo-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`;
+
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const filePath = path.join(uploadDir, filename);
+    await fs.writeFile(filePath, buffer);
+
+    return { url: `/uploads/${filename}` };
+  });
+}
+
