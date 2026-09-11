@@ -40,18 +40,20 @@ export function PublicNavbar() {
     <header className="sticky top-4 z-50 max-w-6xl mx-auto w-[94%] px-4 py-2 rounded-full backdrop-blur-2xl bg-card/80 dark:bg-card/70 border border-border/70 shadow-xl shadow-black/5 flex items-center justify-between transition-all">
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary via-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform overflow-hidden">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
+          {logoUrl ? (
+            <div className="h-10 w-10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoUrl}
                 alt={displayName}
-                className="h-full w-full object-contain p-1 rounded-xl bg-background/50"
+                className="h-full w-full object-contain"
               />
-            ) : (
+            </div>
+          ) : (
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary via-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform">
               <Zap className="h-5 w-5 fill-current" />
-            )}
-          </div>
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm sm:text-base tracking-tight text-foreground">{displayName}</span>
