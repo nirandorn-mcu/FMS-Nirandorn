@@ -11,7 +11,7 @@ describe("seedCore", () => {
     expect(roles.map((x) => x.code).sort()).toEqual(["ADMIN", "STAFF", "SUPER_ADMIN", "VIEWER"]);
     expect(roles.find((x) => x.code === "SUPER_ADMIN")!.isSystem).toBe(true);
     const admin = await prisma.role.findFirst({ where: { code: "ADMIN" }, include: { rolePermissions: true } });
-    expect(admin!.rolePermissions.length).toBe(5);
+    expect(admin!.rolePermissions.length).toBe(ALL_PERMISSIONS.length);
     const superAdmin = await prisma.role.findFirst({ where: { code: "SUPER_ADMIN" }, include: { rolePermissions: true } });
     expect(superAdmin!.rolePermissions.length).toBe(0);
   });

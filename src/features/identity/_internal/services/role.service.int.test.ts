@@ -57,7 +57,7 @@ describe("role.service", () => {
  * ผู้กระทำธรรมดามอบสิทธิ์ที่ไม่มีไม่ได้, และผู้กระทำธรรมดามอบสิทธิ์ที่ตัวเองมีได้ตามปกติ
  */
 describe("role.service — A7: มอบสิทธิ์ที่ตัวเองไม่มีให้บทบาทไม่ได้", () => {
-  const staff = { isSuperAdmin: false, permissions: ["roles:manage", "users:read"] };
+  const staff = { isSuperAdmin: false, permissions: ["roles:manage", "users:read", "advance:read", "petition:read", "petition:create", "project:read", "doc:read"] };
 
   it("createRole: ผู้กระทำธรรมดาใส่สิทธิ์ที่ตัวเองไม่มีไม่ได้ แต่ super admin ได้", async () => {
     const { tenantId, adminId } = await setup();
@@ -81,7 +81,7 @@ describe("role.service — A7: มอบสิทธิ์ที่ตัวเ�
     await expect(
       updateRole({ tenantId, actorId: adminId, ...staff, roleId: core.roleIds.VIEWER, nameTh: "x", nameEn: "x", description: "", permissionCodes: ["users:read", "settings:manage"] }),
     ).rejects.toMatchObject({ code: "forbidden", message: "cannot_grant_unheld_permission" });
-    expect((await listRoles(tenantId)).find((r) => r.code === "VIEWER")!.permissionCodes).toEqual(["users:read"]);
+    expect((await listRoles(tenantId)).find((r) => r.code === "VIEWER")!.permissionCodes.sort()).toEqual(["users:read", "advance:read", "petition:read", "petition:create", "project:read", "doc:read"].sort());
 
     await updateRole({ tenantId, actorId: adminId, ...asSuper, roleId: core.roleIds.VIEWER, nameTh: "x", nameEn: "x", description: "", permissionCodes: ["users:read", "settings:manage"] });
     expect((await listRoles(tenantId)).find((r) => r.code === "VIEWER")!.permissionCodes.sort()).toEqual(["settings:manage", "users:read"]);

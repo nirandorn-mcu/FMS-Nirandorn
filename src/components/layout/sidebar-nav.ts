@@ -1,9 +1,10 @@
-import { LayoutDashboard, Users, Settings, Layers, Banknote, GraduationCap, FolderKanban, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Banknote, GraduationCap, FolderKanban, FileText, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
 import { ADVANCE_P } from "@/features/advance-payment";
 import { PETITION_P } from "@/features/student-petition";
 import { PROJECT_P } from "@/features/project-budget";
+import { DOC_P } from "@/features/document-flow";
 
 export interface NavItem {
   /** i18n key */
@@ -19,6 +20,10 @@ export interface NavCrumb { title: string; href: string }
 
 export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    label: "doc.nav",
+    items: [{ title: "doc.nav", href: "/documents", icon: FileText, permission: DOC_P.docRead }],
+  },
   {
     label: "project.nav",
     items: [{ title: "project.nav", href: "/projects", icon: FolderKanban, permission: PROJECT_P.projectRead }],

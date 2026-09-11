@@ -39,6 +39,7 @@ model Tenant {
   advanceRequests AdvanceRequest[]
   petitions   StudentPetition[]
   projects    Project[]
+  documents   Document[]
 
   @@map("tenants")
 }
@@ -76,6 +77,9 @@ model User {
   deanPetitions      StudentPetition[] @relation("PetitionDean")
   managedProjects    Project[]         @relation("ProjectManager")
   recordedProjectExpenses ProjectExpense[] @relation("ProjectExpenseRecorder")
+  createdDocuments   Document[]        @relation("DocumentCreator")
+  approvedDocSteps   DocumentWorkflowStep[] @relation("DocumentApprover")
+  docComments        DocumentComment[] @relation("DocumentCommenter")
 
   @@map("users")
 }
@@ -495,6 +499,107 @@ model ProjectExpense {
 
   @@index([projectId])
   @@map("project_expenses")
+}
+
+enum DocumentType {
+  MEMO
+  ANNOUNCEMENT
+  ORDER
+  PETITION
+  CONTRACT
+  REPORT
+  OTHER
+}
+
+enum DocumentUrgency {
+  NORMAL
+  URGENT
+  VERY_URGENT
+  MOST_URGENT
+}
+
+enum DocumentConfidentiality {
+  NORMAL
+  CONFIDENTIAL
+  VERY_CONFIDENTIAL
+  TOP_SECRET
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum WorkflowStepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+model Document {
+  id              String                  @id @default(uuid()) @db.Uuid
+  tenantId        String                  @map("tenant_id") @db.Uuid
+  docNo           String                  @map("doc_no") @db.VarChar(50)
+  title           String                  @db.VarChar(255)
+  docType         DocumentType            @default(MEMO) @map("doc_type")
+  urgency         DocumentUrgency         @default(NORMAL)
+  confidentiality DocumentConfidentiality @default(NORMAL)
+  creatorId       String                  @map("creator_id") @db.Uuid
+  currentStep     Int                     @default(1) @map("current_step")
+  totalSteps      Int                     @default(1) @map("total_steps")
+  status          DocumentStatus          @default(DRAFT)
+  content         String?                 @db.Text
+  attachmentUrl   String?                 @map("attachment_url") @db.VarChar(500)
+  tags            Json                    @default("[]") @db.JsonB
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator         User                    @relation("DocumentCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  workflowSteps   DocumentWorkflowStep[]
+  comments        DocumentComment[]
+
+  @@unique([tenantId, docNo])
+  @@index([tenantId, status])
+  @@index([tenantId, creatorId])
+  @@map("documents")
+}
+
+model DocumentWorkflowStep {
+  id           String             @id @default(uuid()) @db.Uuid
+  documentId   String             @map("document_id") @db.Uuid
+  stepNumber   Int                @map("step_number")
+  approverRole String             @map("approver_role") @db.VarChar(100)
+  approverId   String?            @map("approver_id") @db.Uuid
+  status       WorkflowStepStatus @default(PENDING)
+  comment      String?            @db.Text
+  signatureUrl String?            @map("signature_url") @db.VarChar(500)
+  actionAt     DateTime?          @map("action_at") @db.Timestamptz()
+
+  document     Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  approver     User?              @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([approverId])
+  @@map("document_workflow_steps")
+}
+
+model DocumentComment {
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  comment    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation("DocumentCommenter", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_comments")
 }
 
 
