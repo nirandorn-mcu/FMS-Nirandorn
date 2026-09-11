@@ -1,0 +1,95 @@
+services:
+  # ---------------------------------------------------------
+  # Database Service (Isolated Internal Network - No Host Port)
+  # ---------------------------------------------------------
+  fms-db:
+    image: postgres:16-alpine
+    container_name: fms-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ums_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fms-internal-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ums_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # Next.js Application Service (Non-root, Hardened)
+  # ---------------------------------------------------------
+  fms-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fms-app-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@fms-db:5432/${POSTGRES_DB:-ums_prod}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://fms.mcu.ac.th}
+    depends_on:
+      fms-db:
+        condition: service_healthy
+    networks:
+      - fms-internal-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3010/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------
+  # Nginx Reverse Proxy (SSL/TLS, Rate Limiting, WAF Headers)
+  # ---------------------------------------------------------
+  fms-proxy:
+    image: nginx:1.27-alpine
+    container_name: fms-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - fms-app
+    networks:
+      - fms-internal-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+networks:
+  fms-internal-net:
+    driver: bridge
+    internal: false
+
+volumes:
+  postgres_data:
+    driver: local
