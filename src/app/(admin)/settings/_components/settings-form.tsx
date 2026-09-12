@@ -21,6 +21,18 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
     nameEn: initial.nameEn,
     logoUrl: initial.logoUrl ?? "",
     palette: initial.palette as PaletteId,
+    smtpEmail: initial.smtpEmail ?? "",
+    smtpPassword: initial.smtpPassword ?? "",
+    contactAddress: initial.contactAddress ?? "",
+    contactPhone: initial.contactPhone ?? "",
+    contactEmail: initial.contactEmail ?? "",
+    contactOfficeHours: initial.contactOfficeHours ?? "",
+    quickExtEdu: initial.quickExtEdu ?? "",
+    quickExtFinance: initial.quickExtFinance ?? "",
+    quickExtPlan: initial.quickExtPlan ?? "",
+    contactFacebook: initial.contactFacebook ?? "",
+    contactLine: initial.contactLine ?? "",
+    contactWebsite: initial.contactWebsite ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
@@ -38,6 +50,16 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
         nameTh: form.nameTh,
         nameEn: form.nameEn,
         logoUrl: form.logoUrl || null,
+        contactAddress: form.contactAddress,
+        contactPhone: form.contactPhone,
+        contactEmail: form.contactEmail,
+        contactOfficeHours: form.contactOfficeHours,
+        quickExtEdu: form.quickExtEdu,
+        quickExtFinance: form.quickExtFinance,
+        quickExtPlan: form.quickExtPlan,
+        contactFacebook: form.contactFacebook,
+        contactLine: form.contactLine,
+        contactWebsite: form.contactWebsite,
       });
       setErrors({});
       toast.success(t("settings.saveOk"));
@@ -219,6 +241,210 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
               {t("settings.coralWarn")}
             </p>
           )}
+        </LiyonCard>
+
+        <LiyonCard>
+          <h2>การตั้งค่าส่งอีเมล (SMTP Gmail)</h2>
+          <p>ตั้งค่าอีเมลองค์กรสำหรับใช้ส่งแจ้งเตือนและรหัสผ่าน (แนะนำให้ใช้รหัสผ่าน App Password จาก Google Account)</p>
+          <div className="fields">
+            <LiyonField
+              label="อีเมล (Gmail)"
+              htmlFor="s-smtp-email"
+              error={errors.smtpEmail?.[0]}
+              hint="ตัวอย่าง: admin@gmail.com (เว้นว่างเพื่อใช้ค่าระบบ)"
+            >
+              <input
+                id="s-smtp-email"
+                type="email"
+                placeholder="admin@gmail.com"
+                value={form.smtpEmail}
+                onChange={(e) => setForm({ ...form, smtpEmail: e.target.value })}
+              />
+            </LiyonField>
+            <LiyonField
+              label="รหัสผ่าน App Password"
+              htmlFor="s-smtp-pass"
+              error={errors.smtpPassword?.[0]}
+              hint="รหัสผ่าน 16 หลัก ที่ได้จากหน้า Security ของ Google (เว้นว่างหากไม่เปลี่ยน)"
+            >
+              <input
+                id="s-smtp-pass"
+                type="password"
+                placeholder="••••••••••••••••"
+                value={form.smtpPassword}
+                onChange={(e) => setForm({ ...form, smtpPassword: e.target.value })}
+              />
+            </LiyonField>
+          </div>
+        </LiyonCard>
+
+        <LiyonCard>
+          <h2>{t("settings.contactTitle")}</h2>
+          <p>{t("settings.contactDesc")}</p>
+          <div className="fields">
+            <LiyonField
+              label={t("settings.contactAddress")}
+              htmlFor="s-contact-address"
+              hint={t("common.optional")}
+              error={errors.contactAddress?.[0]}
+            >
+              <textarea
+                id="s-contact-address"
+                rows={2}
+                placeholder="อาคารเฉลิมพระเกียรติฯ เลขที่..."
+                value={form.contactAddress}
+                onChange={(e) => setForm({ ...form, contactAddress: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </LiyonField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <LiyonField
+                label={t("settings.contactPhone")}
+                htmlFor="s-contact-phone"
+                hint={t("common.optional")}
+                error={errors.contactPhone?.[0]}
+              >
+                <input
+                  id="s-contact-phone"
+                  type="text"
+                  placeholder="02-123-4567 ต่อ 8001-8005"
+                  value={form.contactPhone}
+                  onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+                />
+              </LiyonField>
+
+              <LiyonField
+                label={t("settings.contactEmail")}
+                htmlFor="s-contact-email"
+                hint={t("common.optional")}
+                error={errors.contactEmail?.[0]}
+              >
+                <input
+                  id="s-contact-email"
+                  type="email"
+                  placeholder="contact@fms.ac.th"
+                  value={form.contactEmail}
+                  onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+                />
+              </LiyonField>
+            </div>
+
+            <LiyonField
+              label={t("settings.contactOfficeHours")}
+              htmlFor="s-contact-hours"
+              hint={t("common.optional")}
+              error={errors.contactOfficeHours?.[0]}
+            >
+              <input
+                id="s-contact-hours"
+                type="text"
+                placeholder="วันจันทร์ - วันศุกร์ เวลา 08:30 - 16:30 น."
+                value={form.contactOfficeHours}
+                onChange={(e) => setForm({ ...form, contactOfficeHours: e.target.value })}
+              />
+            </LiyonField>
+
+            <div className="pt-2">
+              <h3 className="text-sm font-semibold text-foreground mb-2">{t("settings.quickExtTitle")}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <LiyonField
+                  label={t("settings.quickExtEdu")}
+                  htmlFor="s-ext-edu"
+                  hint="ตัวอย่าง: ext. 8002"
+                  error={errors.quickExtEdu?.[0]}
+                >
+                  <input
+                    id="s-ext-edu"
+                    type="text"
+                    placeholder="ext. 8002"
+                    value={form.quickExtEdu}
+                    onChange={(e) => setForm({ ...form, quickExtEdu: e.target.value })}
+                  />
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.quickExtFinance")}
+                  htmlFor="s-ext-finance"
+                  hint="ตัวอย่าง: ext. 8004"
+                  error={errors.quickExtFinance?.[0]}
+                >
+                  <input
+                    id="s-ext-finance"
+                    type="text"
+                    placeholder="ext. 8004"
+                    value={form.quickExtFinance}
+                    onChange={(e) => setForm({ ...form, quickExtFinance: e.target.value })}
+                  />
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.quickExtPlan")}
+                  htmlFor="s-ext-plan"
+                  hint="ตัวอย่าง: ext. 8005"
+                  error={errors.quickExtPlan?.[0]}
+                >
+                  <input
+                    id="s-ext-plan"
+                    type="text"
+                    placeholder="ext. 8005"
+                    value={form.quickExtPlan}
+                    onChange={(e) => setForm({ ...form, quickExtPlan: e.target.value })}
+                  />
+                </LiyonField>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <h3 className="text-sm font-semibold text-foreground mb-2">{t("settings.socialTitle")}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <LiyonField
+                  label={t("settings.contactFacebook")}
+                  htmlFor="s-facebook"
+                  hint={t("common.optional")}
+                  error={errors.contactFacebook?.[0]}
+                >
+                  <input
+                    id="s-facebook"
+                    type="text"
+                    placeholder="fms.official"
+                    value={form.contactFacebook}
+                    onChange={(e) => setForm({ ...form, contactFacebook: e.target.value })}
+                  />
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.contactLine")}
+                  htmlFor="s-line"
+                  hint={t("common.optional")}
+                  error={errors.contactLine?.[0]}
+                >
+                  <input
+                    id="s-line"
+                    type="text"
+                    placeholder="@fms-official"
+                    value={form.contactLine}
+                    onChange={(e) => setForm({ ...form, contactLine: e.target.value })}
+                  />
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.contactWebsite")}
+                  htmlFor="s-website"
+                  hint={t("common.optional")}
+                  error={errors.contactWebsite?.[0]}
+                >
+                  <input
+                    id="s-website"
+                    type="text"
+                    placeholder="https://fms.ac.th"
+                    value={form.contactWebsite}
+                    onChange={(e) => setForm({ ...form, contactWebsite: e.target.value })}
+                  />
+                </LiyonField>
+              </div>
+            </div>
+          </div>
         </LiyonCard>
 
         <div className="savebar">

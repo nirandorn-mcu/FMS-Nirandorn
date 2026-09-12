@@ -12,6 +12,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - fms-internal-net
     deploy:

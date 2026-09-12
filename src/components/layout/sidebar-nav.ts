@@ -1,10 +1,11 @@
-import { LayoutDashboard, Users, Settings, Layers, Banknote, GraduationCap, FolderKanban, FileText, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Settings, Layers, Banknote, GraduationCap, FolderKanban, FileText, BookOpen, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
 import { ADVANCE_P } from "@/features/advance-payment";
 import { PETITION_P } from "@/features/student-petition";
 import { PROJECT_P } from "@/features/project-budget";
 import { DOC_P } from "@/features/document-flow";
+import { P as CURRICULUM_P } from "@/features/curriculum/permissions";
 
 export interface NavItem {
   /** i18n key */
@@ -41,16 +42,21 @@ export const sidebarGroups: NavGroup[] = [
     items: [{ title: "sample.nav", href: "/sample", icon: Layers, permission: SAMPLE_P.sampleRead }],
   },
   {
-    label: "nav.group.users",
+    label: "curriculums.title",
+    items: [{ title: "curriculums.title", href: "/curriculums", icon: BookOpen, permission: CURRICULUM_P.curriculumRead }],
+  },
+
+  {
+    label: "nav.group.settings",
     items: [{
-      title: "nav.users", href: "/users", icon: Users, permission: P.usersRead,
+      title: "nav.settings", href: "/settings", icon: Settings,
       children: [
+        { title: "nav.settings", href: "/settings", permission: P.settingsManage },
         { title: "nav.users", href: "/users", permission: P.usersRead },
         { title: "nav.roles", href: "/users/roles", permission: P.rolesManage },
       ],
     }],
   },
-  { label: "nav.group.settings", items: [{ title: "nav.settings", href: "/settings", icon: Settings, permission: P.settingsManage }] },
 ];
 
 type Ctx = Parameters<typeof hasPermission>[0];

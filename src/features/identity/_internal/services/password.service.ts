@@ -43,9 +43,15 @@ export async function requestPasswordReset(email: string): Promise<void> {
   await recordLoginFailure(keys); // ที่นี่นับ "จำนวนคำขอ" ไม่ใช่ "จำนวนที่ผิดพลาด" — ทุกคำขอนับเสมอ
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
   if (!user || !user.isActive) return;
+  
+  const { getTenantSettings } = await import("./tenant.service");
+  const ut = await prisma.userTenant.findFirst({ where: { userId: user.id }, select: { tenantId: true } });
+  const settings = ut ? await getTenantSettings(ut.tenantId) : undefined;
+  const smtpOverride = settings?.smtpEmail && settings?.smtpPassword ? { user: settings.smtpEmail, pass: settings.smtpPassword } : undefined;
+
   const { raw } = await issueToken({ userId: user.id, purpose: "PASSWORD_RESET", ttlMs: TOKEN_TTL.PASSWORD_RESET });
   const mail = passwordResetEmail(asLocale(user.locale), { name: user.name, link: resetLink(raw), hours: 1 });
-  void sendMail({ to: user.email, ...mail }).catch((err: unknown) => {
+  void sendMail({ to: user.email, ...mail, smtpOverride }).catch((err: unknown) => {
     logger.error("password reset mail failed", { err: err instanceof Error ? err.message : String(err) });
   });
 }

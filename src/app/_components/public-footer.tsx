@@ -110,6 +110,12 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/curriculums" className="hover:text-primary transition-colors flex items-center gap-1.5">
+                  <BookOpen className="h-3 w-3 text-muted-foreground" />
+                  <span>ระบบจัดการหลักสูตรการศึกษา</span>
+                </Link>
+              </li>
+              <li>
                 <a href="#cockpit" className="hover:text-primary transition-colors flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3 text-muted-foreground" />
                   <span>ตรวจสอบสถานะด่วน</span>

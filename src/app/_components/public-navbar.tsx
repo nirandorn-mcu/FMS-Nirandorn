@@ -43,11 +43,7 @@ export function PublicNavbar() {
     if (!loaded) {
       getTenantInfoAction().then((res) => {
         if (res.ok) {
-          setTenantInfo({
-            nameTh: res.data.nameTh,
-            nameEn: res.data.nameEn,
-            logoUrl: res.data.logoUrl,
-          });
+          setTenantInfo(res.data);
         }
       });
     }

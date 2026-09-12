@@ -8,8 +8,14 @@ import { SUPER_ADMIN_CODE } from "../../permissions";
 import { issueToken, consumeToken, TOKEN_TTL } from "../tokens";
 import { writeAudit } from "../audit";
 import { passwordSetupEmail, emailChangeEmail } from "../email-templates";
+import { getTenantSettings } from "./tenant.service";
 import type { ListUsersQuery, RoleAssignment } from "../validations/users";
 import type { ScopeType } from "../grants";
+
+async function getSmtpOverride(tenantId: string) {
+  const s = await getTenantSettings(tenantId);
+  return s.smtpEmail && s.smtpPassword ? { user: s.smtpEmail, pass: s.smtpPassword } : undefined;
+}
 
 export interface UserListItem {
   id: string; email: string; name: string; isActive: boolean; mustChangePassword: boolean; lastLoginAt: string | null;
@@ -119,7 +125,8 @@ export async function createUser(input: Actor & { email: string; name: string; r
   });
   // B17: คืน delivered ให้ผู้เรียกด้วย — SMTP ที่ตั้งค่าผิดจะล้มเงียบ ๆ (mailer ไม่เคย throw) แอดมิน
   // ต้องรู้ว่าต้องคัดลอกลิงก์ส่งเอง ไม่ใช่เห็นแค่ "สร้างผู้ใช้แล้ว"
-  const { delivered } = await sendMail({ to: email, ...passwordSetupEmail("th", { name: input.name, link: setupLink(rawToken), hours: 72 }) });
+  const smtpOverride = await getSmtpOverride(input.tenantId);
+  const { delivered } = await sendMail({ to: email, ...passwordSetupEmail("th", { name: input.name, link: setupLink(rawToken), hours: 72 }), smtpOverride });
   return { user, rawToken, expiresAt, mailDelivered: delivered };
 }
 
@@ -163,7 +170,8 @@ export async function issuePasswordSetupLink(input: Actor & { userId: string }) 
   assertCanActOnTarget(ut.userRoles, input);
   const { raw, expiresAt } = await issueToken({ userId: input.userId, purpose: "PASSWORD_RESET", ttlMs: TOKEN_TTL.PASSWORD_SETUP });
   await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "user.password_link", entity: "user", entityId: input.userId });
-  const { delivered } = await sendMail({ to: ut.user.email, ...passwordSetupEmail(asLocale(ut.user.locale), { name: ut.user.name, link: setupLink(raw), hours: 72 }) });
+  const smtpOverride = await getSmtpOverride(input.tenantId);
+  const { delivered } = await sendMail({ to: ut.user.email, ...passwordSetupEmail(asLocale(ut.user.locale), { name: ut.user.name, link: setupLink(raw), hours: 72 }), smtpOverride });
   return { rawToken: raw, expiresAt, mailDelivered: delivered };
 }
 
@@ -174,7 +182,8 @@ export async function requestEmailChange(input: Actor & { userId: string; newEma
   if (await prisma.user.findUnique({ where: { email: newEmail } })) throw errors.conflict("email_taken");
   const { raw, expiresAt } = await issueToken({ userId: input.userId, purpose: "EMAIL_VERIFY", ttlMs: TOKEN_TTL.EMAIL_VERIFY, payload: { newEmail } });
   await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "user.email_change_request", entity: "user", entityId: input.userId, after: { newEmail } });
-  const { delivered } = await sendMail({ to: newEmail, ...emailChangeEmail(asLocale(ut.user.locale), { name: ut.user.name, link: verifyLink(raw), hours: 24 }) });
+  const smtpOverride = await getSmtpOverride(input.tenantId);
+  const { delivered } = await sendMail({ to: newEmail, ...emailChangeEmail(asLocale(ut.user.locale), { name: ut.user.name, link: verifyLink(raw), hours: 24 }), smtpOverride });
   return { rawToken: raw, expiresAt, mailDelivered: delivered };
 }
 

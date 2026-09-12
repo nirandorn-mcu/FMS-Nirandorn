@@ -1,0 +1,18 @@
+export {
+  getCurriculumStatsAction,
+  getCurriculumsAction,
+  getCurriculumDetailAction,
+  createCurriculumAction,
+  updateCurriculumAction,
+  deleteCurriculumAction,
+  getSubjectsAction,
+  createSubjectAction,
+  updateSubjectAction,
+  deleteSubjectAction,
+  assignSubjectAction,
+  removeSubjectAction,
+  getDepartmentsAction,
+  createDepartmentAction,
+  updateDepartmentAction,
+  deleteDepartmentAction,
+} from "./_internal/actions";

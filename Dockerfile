@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # ---------------------------------------------------------
 # Stage 2: Builder

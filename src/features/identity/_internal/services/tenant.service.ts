@@ -1,11 +1,47 @@
 import { cache } from "react";
 import { prisma, type Db } from "@/shared/lib/infra/prisma";
+import type { Prisma } from "@/generated/prisma";
 import { DEFAULT_PALETTE, isPalette, type PaletteId } from "@/shared/lib/palette";
 import { errors } from "@/shared/lib/errors";
 import { writeAudit } from "../audit";
 import type { UpdateSettingsInput } from "../validations/settings";
 
-export interface TenantSettings { code: string; nameTh: string; nameEn: string; logoUrl: string | null; palette: PaletteId }
+export interface TenantSettings { 
+  code: string; 
+  nameTh: string; 
+  nameEn: string; 
+  logoUrl: string | null; 
+  palette: PaletteId;
+  smtpEmail?: string;
+  smtpPassword?: string;
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactOfficeHours?: string;
+  quickExtEdu?: string;
+  quickExtFinance?: string;
+  quickExtPlan?: string;
+  contactFacebook?: string;
+  contactLine?: string;
+  contactWebsite?: string;
+}
+
+export interface PublicTenantInfo {
+  nameTh: string;
+  nameEn: string;
+  logoUrl: string | null;
+  palette: PaletteId;
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactOfficeHours?: string;
+  quickExtEdu?: string;
+  quickExtFinance?: string;
+  quickExtPlan?: string;
+  contactFacebook?: string;
+  contactLine?: string;
+  contactWebsite?: string;
+}
 
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
   let t = await db.tenant.findUnique({ where: { id: tenantId } });
@@ -13,15 +49,71 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     t = await db.tenant.findFirst({ orderBy: { createdAt: "asc" } });
   }
   if (!t) throw errors.not_found();
-  const p = (t.settings as { palette?: unknown }).palette;
-  return { code: t.code, nameTh: t.nameTh, nameEn: t.nameEn, logoUrl: t.logoUrl, palette: isPalette(p) ? p : DEFAULT_PALETTE };
+  const s = (t.settings ?? {}) as Record<string, unknown>;
+  return { 
+    code: t.code, 
+    nameTh: t.nameTh, 
+    nameEn: t.nameEn, 
+    logoUrl: t.logoUrl, 
+    palette: isPalette(s.palette) ? s.palette : DEFAULT_PALETTE,
+    smtpEmail: typeof s.smtpEmail === "string" ? s.smtpEmail : undefined,
+    smtpPassword: typeof s.smtpPassword === "string" ? s.smtpPassword : undefined,
+    contactAddress: typeof s.contactAddress === "string" ? s.contactAddress : undefined,
+    contactPhone: typeof s.contactPhone === "string" ? s.contactPhone : undefined,
+    contactEmail: typeof s.contactEmail === "string" ? s.contactEmail : undefined,
+    contactOfficeHours: typeof s.contactOfficeHours === "string" ? s.contactOfficeHours : undefined,
+    quickExtEdu: typeof s.quickExtEdu === "string" ? s.quickExtEdu : undefined,
+    quickExtFinance: typeof s.quickExtFinance === "string" ? s.quickExtFinance : undefined,
+    quickExtPlan: typeof s.quickExtPlan === "string" ? s.quickExtPlan : undefined,
+    contactFacebook: typeof s.contactFacebook === "string" ? s.contactFacebook : undefined,
+    contactLine: typeof s.contactLine === "string" ? s.contactLine : undefined,
+    contactWebsite: typeof s.contactWebsite === "string" ? s.contactWebsite : undefined,
+  };
 }
 
 export async function getTenantSettings(tenantId: string): Promise<TenantSettings> {
   return readTenantSettings(tenantId, prisma);
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge เฉพาะ palette ที่เปลี่ยน ไม่ทับทั้งก้อน */
+export const getPublicTenantInfo = cache(async (): Promise<PublicTenantInfo> => {
+  try {
+    const t = await prisma.tenant.findFirst({ orderBy: { createdAt: "asc" } });
+    if (!t) {
+      return {
+        nameTh: "คณะการบริหารและนวัตกรรมดิจิทัล",
+        nameEn: "Faculty of Management and Digital Innovation",
+        logoUrl: null,
+        palette: DEFAULT_PALETTE,
+      };
+    }
+    const s = (t.settings ?? {}) as Record<string, unknown>;
+    return {
+      nameTh: t.nameTh,
+      nameEn: t.nameEn,
+      logoUrl: t.logoUrl,
+      palette: isPalette(s.palette) ? s.palette : DEFAULT_PALETTE,
+      contactAddress: typeof s.contactAddress === "string" ? s.contactAddress : undefined,
+      contactPhone: typeof s.contactPhone === "string" ? s.contactPhone : undefined,
+      contactEmail: typeof s.contactEmail === "string" ? s.contactEmail : undefined,
+      contactOfficeHours: typeof s.contactOfficeHours === "string" ? s.contactOfficeHours : undefined,
+      quickExtEdu: typeof s.quickExtEdu === "string" ? s.quickExtEdu : undefined,
+      quickExtFinance: typeof s.quickExtFinance === "string" ? s.quickExtFinance : undefined,
+      quickExtPlan: typeof s.quickExtPlan === "string" ? s.quickExtPlan : undefined,
+      contactFacebook: typeof s.contactFacebook === "string" ? s.contactFacebook : undefined,
+      contactLine: typeof s.contactLine === "string" ? s.contactLine : undefined,
+      contactWebsite: typeof s.contactWebsite === "string" ? s.contactWebsite : undefined,
+    };
+  } catch {
+    return {
+      nameTh: "คณะการบริหารและนวัตกรรมดิจิทัล",
+      nameEn: "Faculty of Management and Digital Innovation",
+      logoUrl: null,
+      palette: DEFAULT_PALETTE,
+    };
+  }
+});
+
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge เฉพาะ fields ที่เปลี่ยน ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     let t = await tx.tenant.findUnique({ where: { id: input.tenantId } });
@@ -31,11 +123,29 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       if (t) resolvedTenantId = t.id;
     }
     if (!t) throw errors.not_found();
-    const p = (t.settings as { palette?: unknown }).palette;
-    const before = { code: t.code, nameTh: t.nameTh, nameEn: t.nameEn, logoUrl: t.logoUrl, palette: isPalette(p) ? p : DEFAULT_PALETTE };
+    const s = (t.settings ?? {}) as Record<string, unknown>;
+    const before = { code: t.code, nameTh: t.nameTh, nameEn: t.nameEn, logoUrl: t.logoUrl, palette: isPalette(s.palette) ? s.palette : DEFAULT_PALETTE };
+    
+    const newSettings: Prisma.InputJsonObject = {
+      ...(t.settings as Prisma.InputJsonObject),
+      palette: input.palette,
+      ...(input.smtpEmail !== undefined ? { smtpEmail: input.smtpEmail } : {}),
+      ...(input.smtpPassword !== undefined ? { smtpPassword: input.smtpPassword } : {}),
+      ...(input.contactAddress !== undefined ? { contactAddress: input.contactAddress } : {}),
+      ...(input.contactPhone !== undefined ? { contactPhone: input.contactPhone } : {}),
+      ...(input.contactEmail !== undefined ? { contactEmail: input.contactEmail } : {}),
+      ...(input.contactOfficeHours !== undefined ? { contactOfficeHours: input.contactOfficeHours } : {}),
+      ...(input.quickExtEdu !== undefined ? { quickExtEdu: input.quickExtEdu } : {}),
+      ...(input.quickExtFinance !== undefined ? { quickExtFinance: input.quickExtFinance } : {}),
+      ...(input.quickExtPlan !== undefined ? { quickExtPlan: input.quickExtPlan } : {}),
+      ...(input.contactFacebook !== undefined ? { contactFacebook: input.contactFacebook } : {}),
+      ...(input.contactLine !== undefined ? { contactLine: input.contactLine } : {}),
+      ...(input.contactWebsite !== undefined ? { contactWebsite: input.contactWebsite } : {}),
+    };
+    
     await tx.tenant.update({
       where: { id: resolvedTenantId },
-      data: { nameTh: input.nameTh, nameEn: input.nameEn, logoUrl: input.logoUrl || null, settings: { ...(t.settings as object), palette: input.palette } },
+      data: { nameTh: input.nameTh, nameEn: input.nameEn, logoUrl: input.logoUrl || null, settings: newSettings },
     });
     await writeAudit({ tenantId: resolvedTenantId, actorId: input.actorId, action: "tenant.settings_update", entity: "tenant", entityId: resolvedTenantId, before, after: input }, tx);
   });

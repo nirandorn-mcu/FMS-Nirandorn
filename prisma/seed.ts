@@ -128,6 +128,122 @@ async function main() {
     });
   }
 
+  // Seed Departments
+  const deptData = [
+    { code: "D-LOG", nameTh: "ภาควิชาการจัดการโลจิสติกส์และโซ่อุปทาน", nameEn: "Department of Logistics and Supply Chain Management", description: "จัดการเรียนการสอนและพัฒนางานวิจัยด้านโลจิสติกส์ โซ่อุปทาน การจัดซื้อ และการขนส่ง" },
+    { code: "D-BIS", nameTh: "ภาควิชาระบบสารสนเทศและธุรกิจดิจิทัล", nameEn: "Department of Business Information Systems", description: "พัฒนาบัณฑิตด้านเทคโนโลยีสารสนเทศธุรกิจ นวัตกรรมดิจิทัล และการวิเคราะห์ข้อมูล" },
+    { code: "D-MGT", nameTh: "ภาควิชาการจัดการ", nameEn: "Department of Management", description: "สร้างผู้นำและนักบริหารองค์กรยุคใหม่ มีความเชี่ยวชาญการจัดการเชิงกลยุทธ์และการเป็นผู้ประกอบการ" },
+    { code: "D-ACC", nameTh: "ภาควิชาการบัญชี", nameEn: "Department of Accountancy", description: "มุ่งเน้นการผลิตนักบัญชีมืออาชีพที่มีจรรยาบรรณ และความเชี่ยวชาญเทคโนโลยีทางการบัญชี" },
+    { code: "D-MKT", nameTh: "ภาควิชาการตลาด", nameEn: "Department of Marketing", description: "ผลิตนักการตลาดดิจิทัล การสร้างตราสินค้า และการสื่อสารการตลาดแบบบูรณาการ" },
+  ];
+
+  const deptMap: Record<string, string> = {};
+  for (const d of deptData) {
+    const row = await prisma.department.upsert({
+      where: { tenantId_code: { tenantId: core.tenantId, code: d.code } },
+      update: { nameTh: d.nameTh, nameEn: d.nameEn, description: d.description },
+      create: { tenantId: core.tenantId, code: d.code, nameTh: d.nameTh, nameEn: d.nameEn, description: d.description, status: "ACTIVE" },
+    });
+    deptMap[d.code] = row.id;
+  }
+
+  // Seed sample Curriculums and Subjects
+  const existingCurriculum = await prisma.curriculum.findFirst({ where: { tenantId: core.tenantId } });
+  if (!existingCurriculum) {
+    // 1. Create Subjects
+    const subData = [
+      { code: "MGT1001", nameTh: "หลักการจัดการ", nameEn: "Principles of Management", credits: 3, creditInfo: "3(3-0-6)", description: "แนวคิด ทฤษฎี และกระบวนการจัดการ การวางแผน การจัดองค์การ การชักนำ และการควบคุมองค์การในยุคดิจิทัล" },
+      { code: "ACC1001", nameTh: "การบัญชีการเงินเบื้องต้น", nameEn: "Introduction to Financial Accounting", credits: 3, creditInfo: "3(3-0-6)", description: "หลักการและวิธีการบันทึกบัญชี วงจรบัญชี การจัดทำงบการเงินสำหรับกิจการให้บริการและพาณิชยกรรม" },
+      { code: "LOG2001", nameTh: "การจัดการโลจิสติกส์และโซ่อุปทาน", nameEn: "Logistics and Supply Chain Management", credits: 3, creditInfo: "3(3-0-6)", description: "กิจกรรมโลจิสติกส์ การจัดซื้อ การจัดการสินค้าคงคลัง การขนส่ง และการบูรณาการโซ่อุปทานระดับสากล" },
+      { code: "LOG3002", nameTh: "การจัดการคลังสินค้าและการกระจายสินค้า", nameEn: "Warehouse and Distribution Management", credits: 3, creditInfo: "3(2-2-5)", description: "การออกแบบคลังสินค้า ระบบจัดเก็บและเบิกจ่าย เทคโนโลยีบาร์โค้ดและ RFID การบริหารยานพาหนะขนส่ง" },
+      { code: "BIS2001", nameTh: "ระบบสารสนเทศเพื่อการจัดการ", nameEn: "Management Information Systems", credits: 3, creditInfo: "3(3-0-6)", description: "บทบาทของสารสนเทศในองค์กร ระบบ ERP การพาณิชย์อิเล็กทรอนิกส์ ความมั่นคงปลอดภัยสารสนเทศ" },
+      { code: "BIS3003", nameTh: "การวิเคราะห์และออกแบบระบบเชิงธุรกิจ", nameEn: "Business Systems Analysis and Design", credits: 3, creditInfo: "3(2-2-5)", description: "วงจรการพัฒนาระบบ การวิเคราะห์ความต้องการเชิงธุรกิจ แผนภาพ UML การออกแบบฐานข้อมูลและส่วนติดต่อผู้ใช้" },
+      { code: "GEN1001", nameTh: "ภาษาอังกฤษเพื่อการสื่อสารในการทำงาน", nameEn: "English for Workplace Communication", credits: 3, creditInfo: "3(3-0-6)", description: "การพัฒนาทักษะการฟัง พูด อ่าน และเขียนภาษาอังกฤษที่ใช้ในการติดต่อธุรกิจและการนำเสนองาน" },
+      { code: "GEN1002", nameTh: "ทักษะดิจิทัลและความฉลาดรู้สารสนเทศ", nameEn: "Digital Skills and Information Literacy", credits: 3, creditInfo: "3(2-2-5)", description: "การประยุกต์ใช้ซอฟต์แวร์สำนักงาน การใช้ระบบคลาวด์ การรู้เท่าทันสื่อดิจิทัลและความปลอดภัยทางไซเบอร์" },
+    ];
+
+    const subjectMap: Record<string, string> = {};
+    for (const s of subData) {
+      const created = await prisma.subject.create({
+        data: {
+          tenantId: core.tenantId,
+          code: s.code,
+          nameTh: s.nameTh,
+          nameEn: s.nameEn,
+          credits: s.credits,
+          creditInfo: s.creditInfo,
+          description: s.description,
+          status: "ACTIVE",
+        },
+      });
+      subjectMap[s.code] = created.id;
+    }
+
+    // 2. Create Curriculum 1: Logistics
+    await prisma.curriculum.create({
+      data: {
+        tenantId: core.tenantId,
+        departmentId: deptMap["D-LOG"],
+        code: "BBA-LOG-2565",
+        nameTh: "หลักสูตรบริหารธุรกิจบัณฑิต สาขาวิชาการจัดการโลจิสติกส์และโซ่อุปทาน",
+        nameEn: "Bachelor of Business Administration Program in Logistics and Supply Chain Management",
+        degreeTh: "บริหารธุรกิจบัณฑิต (การจัดการโลจิสติกส์และโซ่อุปทาน)",
+        degreeEn: "Bachelor of Business Administration (Logistics and Supply Chain Management)",
+        faculty: "คณะวิทยาการจัดการ",
+        totalCredits: 126,
+        revisionYear: 2565,
+        status: "ACTIVE",
+        subjects: {
+          create: [
+            { subjectId: subjectMap["GEN1001"], category: "หมวดวิชาศึกษาทั่วไป", isCompulsory: true },
+            { subjectId: subjectMap["GEN1002"], category: "หมวดวิชาศึกษาทั่วไป", isCompulsory: true },
+            { subjectId: subjectMap["MGT1001"], category: "หมวดวิชาเฉพาะ / พื้นฐานวิชาชีพ", isCompulsory: true },
+            { subjectId: subjectMap["ACC1001"], category: "หมวดวิชาเฉพาะ / พื้นฐานวิชาชีพ", isCompulsory: true },
+            { subjectId: subjectMap["BIS2001"], category: "หมวดวิชาเฉพาะ / พื้นฐานวิชาชีพ", isCompulsory: true },
+            { subjectId: subjectMap["LOG2001"], category: "หมวดวิชาเอก / บังคับ", isCompulsory: true },
+            { subjectId: subjectMap["LOG3002"], category: "หมวดวิชาเอกเลือก", isCompulsory: false },
+          ],
+        },
+      },
+    });
+
+    // 3. Create Curriculum 2: Digital Business
+    await prisma.curriculum.create({
+      data: {
+        tenantId: core.tenantId,
+        departmentId: deptMap["D-BIS"],
+        code: "BBA-BIS-2566",
+        nameTh: "หลักสูตรบริหารธุรกิจบัณฑิต สาขาวิชาระบบสารสนเทศเพื่อการจัดการและธุรกิจดิจิทัล",
+        nameEn: "Bachelor of Business Administration Program in Digital Business and Information Systems",
+        degreeTh: "บริหารธุรกิจบัณฑิต (ระบบสารสนเทศเพื่อการจัดการและธุรกิจดิจิทัล)",
+        degreeEn: "Bachelor of Business Administration (Digital Business and Information Systems)",
+        faculty: "คณะวิทยาการจัดการ",
+        totalCredits: 124,
+        revisionYear: 2566,
+        status: "ACTIVE",
+        subjects: {
+          create: [
+            { subjectId: subjectMap["GEN1001"], category: "หมวดวิชาศึกษาทั่วไป", isCompulsory: true },
+            { subjectId: subjectMap["GEN1002"], category: "หมวดวิชาศึกษาทั่วไป", isCompulsory: true },
+            { subjectId: subjectMap["MGT1001"], category: "หมวดวิชาเฉพาะ / พื้นฐานวิชาชีพ", isCompulsory: true },
+            { subjectId: subjectMap["BIS2001"], category: "หมวดวิชาเฉพาะ / พื้นฐานวิชาชีพ", isCompulsory: true },
+            { subjectId: subjectMap["BIS3003"], category: "หมวดวิชาเอก / บังคับ", isCompulsory: true },
+          ],
+        },
+      },
+    });
+  } else {
+    // If curriculums were already seeded, associate them with departments
+    await prisma.curriculum.updateMany({
+      where: { tenantId: core.tenantId, code: "BBA-LOG-2565", departmentId: null },
+      data: { departmentId: deptMap["D-LOG"] },
+    });
+    await prisma.curriculum.updateMany({
+      where: { tenantId: core.tenantId, code: "BBA-BIS-2566", departmentId: null },
+      data: { departmentId: deptMap["D-BIS"] },
+    });
+  }
+
   console.log(`[seed] เสร็จ — login: admin@app.local / ${DEV_PASSWORD}`);
 }
 

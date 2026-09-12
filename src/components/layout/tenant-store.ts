@@ -4,8 +4,18 @@ export interface TenantInfoState {
   nameTh: string;
   nameEn: string;
   logoUrl: string | null;
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactOfficeHours?: string;
+  quickExtEdu?: string;
+  quickExtFinance?: string;
+  quickExtPlan?: string;
+  contactFacebook?: string;
+  contactLine?: string;
+  contactWebsite?: string;
   loaded: boolean;
-  setTenantInfo: (info: { nameTh?: string; nameEn?: string; logoUrl?: string | null }) => void;
+  setTenantInfo: (info: Partial<TenantInfoState>) => void;
 }
 
 export const useTenantStore = create<TenantInfoState>((set) => ({

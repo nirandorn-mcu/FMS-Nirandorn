@@ -1,4 +1,3 @@
-// VibeCore Framework Starter Kit. ตารางระดับแพลตฟอร์ม (ไม่มี tenant_id): users, permissions, auth_tokens, login_throttles
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -9,91 +8,80 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ScopeType {
-  ALL
-  CAMPUS
-  ORG_UNIT
-}
-
-enum TokenPurpose {
-  EMAIL_VERIFY
-  PASSWORD_RESET
-}
-
 model Tenant {
-  id        String   @id @default(uuid()) @db.Uuid
-  code      String   @unique @db.VarChar(50)
-  nameTh    String   @map("name_th") @db.VarChar(255)
-  nameEn    String   @map("name_en") @db.VarChar(255)
-  logoUrl   String?  @map("logo_url") @db.VarChar(500)
+  id              String            @id @default(uuid()) @db.Uuid
+  code            String            @unique @db.VarChar(50)
+  nameTh          String            @map("name_th") @db.VarChar(255)
+  nameEn          String            @map("name_en") @db.VarChar(255)
+  logoUrl         String?           @map("logo_url") @db.VarChar(500)
   /// { palette?: "blue"|"coral"|"pink"|"green"|"purple" }
-  settings  Json     @default("{}") @db.JsonB
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
-
-  userTenants UserTenant[]
-  roles       Role[]
-  auditLogs   AuditLog[]
-  sampleItems SampleItem[]
+  settings        Json              @default("{}")
+  isActive        Boolean           @default(true) @map("is_active")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   advanceRequests AdvanceRequest[]
-  petitions   StudentPetition[]
-  projects    Project[]
-  documents   Document[]
+  auditLogs       AuditLog[]
+  documents       Document[]
+  projects        Project[]
+  roles           Role[]
+  sampleItems     SampleItem[]
+  petitions       StudentPetition[]
+  userTenants     UserTenant[]
+  curriculums     Curriculum[]
+  subjects        Subject[]
+  departments     Department[]
 
   @@map("tenants")
 }
 
 model User {
-  id                 String    @id @default(uuid()) @db.Uuid
+  id                      String                 @id @default(uuid()) @db.Uuid
   /// เก็บตัวพิมพ์เล็กเสมอ
-  email              String    @unique @db.VarChar(255)
-  passwordHash       String?   @map("password_hash") @db.VarChar(255)
+  email                   String                 @unique @db.VarChar(255)
+  passwordHash            String?                @map("password_hash") @db.VarChar(255)
   /// ชื่อที่แสดง
-  name               String    @db.VarChar(255)
-  imageUrl           String?   @map("image_url") @db.VarChar(500)
+  name                    String                 @db.VarChar(255)
+  imageUrl                String?                @map("image_url") @db.VarChar(500)
   /// credentials | google | microsoft
-  provider           String    @default("credentials") @db.VarChar(20)
-  providerId         String?   @map("provider_id") @db.VarChar(255)
-  emailVerified      Boolean   @default(false) @map("email_verified")
-  isActive           Boolean   @default(true) @map("is_active")
-  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  provider                String                 @default("credentials") @db.VarChar(20)
+  providerId              String?                @map("provider_id") @db.VarChar(255)
+  emailVerified           Boolean                @default(false) @map("email_verified")
+  isActive                Boolean                @default(true) @map("is_active")
+  mustChangePassword      Boolean                @default(false) @map("must_change_password")
   /// th | en | null (= ตามเบราว์เซอร์/ค่าเริ่มต้น)
-  locale             String?   @db.VarChar(5)
-  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz()
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-
-  userTenants UserTenant[]
-  authTokens  AuthToken[]
-  auditLogs   AuditLog[]   @relation("AuditActor")
-  borrowedAdvances   AdvanceRequest[]  @relation("AdvanceBorrower")
-  approvedAdvances   AdvanceRequest[]  @relation("AdvanceApprover")
-  disbursedAdvances  AdvanceRequest[]  @relation("AdvanceDisburser")
-  clearedClearings   AdvanceClearing[] @relation("AdvanceClearingOfficer")
-  submittedPetitions StudentPetition[] @relation("PetitionStudent")
-  advisorPetitions   StudentPetition[] @relation("PetitionAdvisor")
-  officerPetitions   StudentPetition[] @relation("PetitionOfficer")
-  deanPetitions      StudentPetition[] @relation("PetitionDean")
-  managedProjects    Project[]         @relation("ProjectManager")
-  recordedProjectExpenses ProjectExpense[] @relation("ProjectExpenseRecorder")
-  createdDocuments   Document[]        @relation("DocumentCreator")
-  approvedDocSteps   DocumentWorkflowStep[] @relation("DocumentApprover")
-  docComments        DocumentComment[] @relation("DocumentCommenter")
+  locale                  String?                @db.VarChar(5)
+  lastLoginAt             DateTime?              @map("last_login_at") @db.Timestamptz(6)
+  createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clearedClearings        AdvanceClearing[]      @relation("AdvanceClearingOfficer")
+  approvedAdvances        AdvanceRequest[]       @relation("AdvanceApprover")
+  borrowedAdvances        AdvanceRequest[]       @relation("AdvanceBorrower")
+  disbursedAdvances       AdvanceRequest[]       @relation("AdvanceDisburser")
+  auditLogs               AuditLog[]             @relation("AuditActor")
+  authTokens              AuthToken[]
+  docComments             DocumentComment[]      @relation("DocumentCommenter")
+  approvedDocSteps        DocumentWorkflowStep[] @relation("DocumentApprover")
+  createdDocuments        Document[]             @relation("DocumentCreator")
+  recordedProjectExpenses ProjectExpense[]       @relation("ProjectExpenseRecorder")
+  managedProjects         Project[]              @relation("ProjectManager")
+  advisorPetitions        StudentPetition[]      @relation("PetitionAdvisor")
+  deanPetitions           StudentPetition[]      @relation("PetitionDean")
+  officerPetitions        StudentPetition[]      @relation("PetitionOfficer")
+  submittedPetitions      StudentPetition[]      @relation("PetitionStudent")
+  userTenants             UserTenant[]
 
   @@map("users")
 }
 
 model UserTenant {
-  id       String   @id @default(uuid()) @db.Uuid
-  userId   String   @map("user_id") @db.Uuid
-  tenantId String   @map("tenant_id") @db.Uuid
-  isActive Boolean  @default(true) @map("is_active")
-  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz()
-
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @map("user_id") @db.Uuid
+  tenantId  String     @map("tenant_id") @db.Uuid
+  isActive  Boolean    @default(true) @map("is_active")
+  joinedAt  DateTime   @default(now()) @map("joined_at") @db.Timestamptz(6)
   userRoles UserRole[]
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tenantId])
   @@index([tenantId])
@@ -101,20 +89,19 @@ model UserTenant {
 }
 
 model Role {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @map("tenant_id") @db.Uuid
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @map("tenant_id") @db.Uuid
   /// A-Z 0-9 _ เช่น SUPER_ADMIN
-  code        String   @db.VarChar(50)
-  nameTh      String   @map("name_th") @db.VarChar(100)
-  nameEn      String   @map("name_en") @db.VarChar(100)
-  description String?  @db.VarChar(500)
+  code            String           @db.VarChar(50)
+  nameTh          String           @map("name_th") @db.VarChar(100)
+  nameEn          String           @map("name_en") @db.VarChar(100)
+  description     String?          @db.VarChar(500)
   /// แก้สิทธิ์/ลบไม่ได้ · SUPER_ADMIN ได้ทุกสิทธิ์โดยไม่ต้องมีแถวใน role_permissions
-  isSystem    Boolean  @default(false) @map("is_system")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
-
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isSystem        Boolean          @default(false) @map("is_system")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   rolePermissions RolePermission[]
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userRoles       UserRole[]
 
   @@unique([tenantId, code])
@@ -123,16 +110,15 @@ model Role {
 
 /// ผู้ใช้มีได้หลายแถว (หลายบทบาท / บทบาทเดียวหลายขอบเขต) · unique ที่มี scope_id null ไม่กันซ้ำใน Postgres — service ต้องเขียนแบบลบทั้งชุดแล้วสร้างใหม่
 model UserRole {
-  id           String    @id @default(uuid()) @db.Uuid
-  userTenantId String    @map("user_tenant_id") @db.Uuid
-  roleId       String    @map("role_id") @db.Uuid
-  scopeType    ScopeType @default(ALL) @map("scope_type")
+  id           String     @id @default(uuid()) @db.Uuid
+  userTenantId String     @map("user_tenant_id") @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  scopeType    ScopeType  @default(ALL) @map("scope_type")
   /// campus_id หรือ org_unit_id หรือขอบเขตอื่นที่กำหนดเพิ่ม — null เมื่อ scope_type = ALL
-  scopeId      String?   @map("scope_id") @db.Uuid
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-
-  userTenant UserTenant @relation(fields: [userTenantId], references: [id], onDelete: Cascade)
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  scopeId      String?    @map("scope_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  role         Role       @relation(fields: [roleId], references: [id])
+  userTenant   UserTenant @relation(fields: [userTenantId], references: [id], onDelete: Cascade)
 
   @@unique([userTenantId, roleId, scopeType, scopeId])
   @@index([roleId])
@@ -141,23 +127,21 @@ model UserRole {
 
 /// seed จาก src/permissions.ts ทุกครั้ง ไม่แก้ผ่าน UI
 model Permission {
-  id          String  @id @default(uuid()) @db.Uuid
-  code        String  @unique @db.VarChar(100)
-  module      String  @db.VarChar(50)
-  action      String  @db.VarChar(50)
-  description String? @db.VarChar(255)
-
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique @db.VarChar(100)
+  module          String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  description     String?          @db.VarChar(255)
   rolePermissions RolePermission[]
 
   @@map("permissions")
 }
 
 model RolePermission {
-  roleId       String @map("role_id") @db.Uuid
-  permissionId String @map("permission_id") @db.Uuid
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
@@ -170,12 +154,11 @@ model AuthToken {
   purpose   TokenPurpose
   tokenHash String       @unique @map("token_hash") @db.VarChar(128)
   /// EMAIL_VERIFY: { newEmail }
-  payload   Json?        @db.JsonB
-  expiresAt DateTime     @map("expires_at") @db.Timestamptz()
-  usedAt    DateTime?    @map("used_at") @db.Timestamptz()
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz()
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payload   Json?
+  expiresAt DateTime     @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?    @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, purpose])
   @@map("auth_tokens")
@@ -185,8 +168,8 @@ model AuthToken {
 model LoginThrottle {
   key         String    @id @db.VarChar(320)
   failCount   Int       @default(0) @map("fail_count")
-  lockedUntil DateTime? @map("locked_until") @db.Timestamptz()
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("login_throttles")
 }
@@ -199,13 +182,12 @@ model AuditLog {
   action    String   @db.VarChar(100)
   entity    String   @db.VarChar(50)
   entityId  String   @map("entity_id") @db.VarChar(64)
-  before    Json?    @db.JsonB
-  after     Json?    @db.JsonB
+  before    Json?
+  after     Json?
   ip        String?  @db.VarChar(64)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  actor  User?  @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, entity, entityId])
   @@index([tenantId, createdAt])
@@ -217,15 +199,282 @@ model SampleItem {
   id          String   @id @default(uuid()) @db.Uuid
   tenantId    String   @map("tenant_id") @db.Uuid
   title       String   @db.VarChar(255)
-  description String?  @db.Text
+  description String?
   status      String   @default("ACTIVE") @db.VarChar(50)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@map("sample_items")
+}
+
+model AdvanceRequest {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @map("tenant_id") @db.Uuid
+  reqNo           String           @map("req_no") @db.VarChar(50)
+  borrowerId      String           @map("borrower_id") @db.Uuid
+  title           String           @db.VarChar(255)
+  description     String?
+  amount          Decimal          @db.Decimal(12, 2)
+  eventStartDate  DateTime         @map("event_start_date") @db.Date
+  eventEndDate    DateTime         @map("event_end_date") @db.Date
+  dueDateClearing DateTime         @map("due_date_clearing") @db.Date
+  status          AdvanceStatus    @default(SUBMITTED)
+  bankName        String?          @map("bank_name") @db.VarChar(100)
+  bankAccountName String?          @map("bank_account_name") @db.VarChar(255)
+  bankAccountNo   String?          @map("bank_account_no") @db.VarChar(50)
+  approvedAt      DateTime?        @map("approved_at") @db.Timestamptz(6)
+  approverId      String?          @map("approver_id") @db.Uuid
+  rejectionReason String?          @map("rejection_reason")
+  disbursedAt     DateTime?        @map("disbursed_at") @db.Timestamptz(6)
+  disbursedById   String?          @map("disbursed_by_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clearing        AdvanceClearing?
+  items           AdvanceItem[]
+  approver        User?            @relation("AdvanceApprover", fields: [approverId], references: [id])
+  borrower        User             @relation("AdvanceBorrower", fields: [borrowerId], references: [id])
+  disburser       User?            @relation("AdvanceDisburser", fields: [disbursedById], references: [id])
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, reqNo])
+  @@index([tenantId, borrowerId])
+  @@index([tenantId, status])
+  @@map("advance_requests")
+}
+
+model AdvanceItem {
+  id               String         @id @default(uuid()) @db.Uuid
+  advanceRequestId String         @map("advance_request_id") @db.Uuid
+  itemDescription  String         @map("item_description") @db.VarChar(255)
+  estimatedAmount  Decimal        @map("estimated_amount") @db.Decimal(12, 2)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  advanceRequest   AdvanceRequest @relation(fields: [advanceRequestId], references: [id], onDelete: Cascade)
+
+  @@index([advanceRequestId])
+  @@map("advance_items")
+}
+
+model AdvanceClearing {
+  id                 String                @id @default(uuid()) @db.Uuid
+  advanceRequestId   String                @unique @map("advance_request_id") @db.Uuid
+  actualExpenseTotal Decimal               @map("actual_expense_total") @db.Decimal(12, 2)
+  refundAmount       Decimal               @default(0) @map("refund_amount") @db.Decimal(12, 2)
+  reimburseAmount    Decimal               @default(0) @map("reimburse_amount") @db.Decimal(12, 2)
+  clearingDate       DateTime              @default(now()) @map("clearing_date") @db.Timestamptz(6)
+  notes              String?
+  receiptProofUrl    String?               @map("receipt_proof_url") @db.VarChar(500)
+  clearedById        String?               @map("cleared_by_id") @db.Uuid
+  status             ClearingStatus        @default(PENDING)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items              AdvanceClearingItem[]
+  advanceRequest     AdvanceRequest        @relation(fields: [advanceRequestId], references: [id], onDelete: Cascade)
+  clearingOfficer    User?                 @relation("AdvanceClearingOfficer", fields: [clearedById], references: [id])
+
+  @@map("advance_clearings")
+}
+
+model AdvanceClearingItem {
+  id           String          @id @default(uuid()) @db.Uuid
+  clearingId   String          @map("clearing_id") @db.Uuid
+  receiptNo    String?         @map("receipt_no") @db.VarChar(100)
+  receiptDate  DateTime        @map("receipt_date") @db.Date
+  expenseTitle String          @map("expense_title") @db.VarChar(255)
+  amount       Decimal         @db.Decimal(12, 2)
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  clearing     AdvanceClearing @relation(fields: [clearingId], references: [id], onDelete: Cascade)
+
+  @@index([clearingId])
+  @@map("advance_clearing_items")
+}
+
+model StudentPetition {
+  id              String               @id @default(uuid()) @db.Uuid
+  tenantId        String               @map("tenant_id") @db.Uuid
+  ticketNo        String               @map("ticket_no") @db.VarChar(50)
+  studentId       String               @map("student_id") @db.Uuid
+  studentCode     String               @map("student_code") @db.VarChar(50)
+  studentName     String               @map("student_name") @db.VarChar(255)
+  studentEmail    String               @map("student_email") @db.VarChar(255)
+  major           String               @db.VarChar(100)
+  yearLevel       Int                  @map("year_level")
+  petitionType    PetitionType         @map("petition_type")
+  title           String               @db.VarChar(255)
+  details         String
+  evidenceUrls    Json                 @default("[]") @map("evidence_urls")
+  status          PetitionStatus       @default(SUBMITTED)
+  advisorId       String?              @map("advisor_id") @db.Uuid
+  advisorComment  String?              @map("advisor_comment")
+  advisorActionAt DateTime?            @map("advisor_action_at") @db.Timestamptz(6)
+  officerId       String?              @map("officer_id") @db.Uuid
+  officerComment  String?              @map("officer_comment")
+  officerActionAt DateTime?            @map("officer_action_at") @db.Timestamptz(6)
+  deanId          String?              @map("dean_id") @db.Uuid
+  deanComment     String?              @map("dean_comment")
+  deanActionAt    DateTime?            @map("dean_action_at") @db.Timestamptz(6)
+  rejectionReason String?              @map("rejection_reason")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  logs            StudentPetitionLog[]
+  advisor         User?                @relation("PetitionAdvisor", fields: [advisorId], references: [id])
+  dean            User?                @relation("PetitionDean", fields: [deanId], references: [id])
+  officer         User?                @relation("PetitionOfficer", fields: [officerId], references: [id])
+  student         User                 @relation("PetitionStudent", fields: [studentId], references: [id])
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, ticketNo])
+  @@index([tenantId, studentId])
+  @@index([tenantId, status])
+  @@map("student_petitions")
+}
+
+model StudentPetitionLog {
+  id         String          @id @default(uuid()) @db.Uuid
+  petitionId String          @map("petition_id") @db.Uuid
+  actorId    String?         @map("actor_id") @db.Uuid
+  actorName  String          @map("actor_name") @db.VarChar(255)
+  action     String          @db.VarChar(100)
+  statusFrom PetitionStatus? @map("status_from")
+  statusTo   PetitionStatus  @map("status_to")
+  comment    String?
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  petition   StudentPetition @relation(fields: [petitionId], references: [id], onDelete: Cascade)
+
+  @@index([petitionId])
+  @@map("student_petition_logs")
+}
+
+model Project {
+  id                  String           @id @default(uuid()) @db.Uuid
+  tenantId            String           @map("tenant_id") @db.Uuid
+  code                String           @db.VarChar(50)
+  nameTh              String           @map("name_th") @db.VarChar(255)
+  nameEn              String?          @map("name_en") @db.VarChar(255)
+  fiscalYear          Int              @map("fiscal_year")
+  strategicPlan       String?          @map("strategic_plan") @db.VarChar(255)
+  budgetSource        BudgetSource     @default(REVENUE) @map("budget_source")
+  allocatedBudget     Decimal          @map("allocated_budget") @db.Decimal(12, 2)
+  spentBudget         Decimal          @default(0) @map("spent_budget") @db.Decimal(12, 2)
+  responsiblePersonId String           @map("responsible_person_id") @db.Uuid
+  startDate           DateTime         @map("start_date") @db.Date
+  endDate             DateTime         @map("end_date") @db.Date
+  status              ProjectStatus    @default(PLANNED)
+  description         String?
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expenses            ProjectExpense[]
+  kpis                ProjectKpi[]
+  responsiblePerson   User             @relation("ProjectManager", fields: [responsiblePersonId], references: [id])
+  tenant              Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId, fiscalYear])
+  @@index([tenantId, status])
+  @@map("projects")
+}
+
+model ProjectKpi {
+  id            String    @id @default(uuid()) @db.Uuid
+  projectId     String    @map("project_id") @db.Uuid
+  indicatorName String    @map("indicator_name") @db.VarChar(255)
+  targetValue   Decimal   @map("target_value") @db.Decimal(10, 2)
+  actualValue   Decimal   @default(0) @map("actual_value") @db.Decimal(10, 2)
+  unit          String    @db.VarChar(50)
+  status        KpiStatus @default(PENDING)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_kpis")
+}
+
+model ProjectExpense {
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  title        String   @db.VarChar(255)
+  amount       Decimal  @db.Decimal(12, 2)
+  expenseDate  DateTime @map("expense_date") @db.Date
+  receiptRef   String?  @map("receipt_ref") @db.VarChar(100)
+  recordedById String   @map("recorded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recordedBy   User     @relation("ProjectExpenseRecorder", fields: [recordedById], references: [id])
+
+  @@index([projectId])
+  @@map("project_expenses")
+}
+
+model Document {
+  id              String                  @id @default(uuid()) @db.Uuid
+  tenantId        String                  @map("tenant_id") @db.Uuid
+  docNo           String                  @map("doc_no") @db.VarChar(50)
+  title           String                  @db.VarChar(255)
+  docType         DocumentType            @default(MEMO) @map("doc_type")
+  urgency         DocumentUrgency         @default(NORMAL)
+  confidentiality DocumentConfidentiality @default(NORMAL)
+  creatorId       String                  @map("creator_id") @db.Uuid
+  currentStep     Int                     @default(1) @map("current_step")
+  totalSteps      Int                     @default(1) @map("total_steps")
+  status          DocumentStatus          @default(DRAFT)
+  content         String?
+  attachmentUrl   String?                 @map("attachment_url") @db.VarChar(500)
+  tags            Json                    @default("[]")
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  comments        DocumentComment[]
+  workflowSteps   DocumentWorkflowStep[]
+  creator         User                    @relation("DocumentCreator", fields: [creatorId], references: [id])
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, docNo])
+  @@index([tenantId, status])
+  @@index([tenantId, creatorId])
+  @@map("documents")
+}
+
+model DocumentWorkflowStep {
+  id           String             @id @default(uuid()) @db.Uuid
+  documentId   String             @map("document_id") @db.Uuid
+  stepNumber   Int                @map("step_number")
+  approverRole String             @map("approver_role") @db.VarChar(100)
+  approverId   String?            @map("approver_id") @db.Uuid
+  status       WorkflowStepStatus @default(PENDING)
+  comment      String?
+  signatureUrl String?            @map("signature_url") @db.VarChar(500)
+  actionAt     DateTime?          @map("action_at") @db.Timestamptz(6)
+  approver     User?              @relation("DocumentApprover", fields: [approverId], references: [id])
+  document     Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([approverId])
+  @@map("document_workflow_steps")
+}
+
+model DocumentComment {
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  comment    String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation("DocumentCommenter", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_comments")
+}
+
+enum ScopeType {
+  ALL
+  CAMPUS
+  ORG_UNIT
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
 }
 
 enum AdvanceStatus {
@@ -244,95 +493,6 @@ enum ClearingStatus {
   REJECTED
 }
 
-model AdvanceRequest {
-  id              String        @id @default(uuid()) @db.Uuid
-  tenantId        String        @map("tenant_id") @db.Uuid
-  reqNo           String        @map("req_no") @db.VarChar(50)
-  borrowerId      String        @map("borrower_id") @db.Uuid
-  title           String        @db.VarChar(255)
-  description     String?       @db.Text
-  amount          Decimal       @db.Decimal(12, 2)
-  eventStartDate  DateTime      @map("event_start_date") @db.Date
-  eventEndDate    DateTime      @map("event_end_date") @db.Date
-  dueDateClearing DateTime      @map("due_date_clearing") @db.Date
-  status          AdvanceStatus @default(SUBMITTED)
-  
-  bankName        String?       @map("bank_name") @db.VarChar(100)
-  bankAccountName String?       @map("bank_account_name") @db.VarChar(255)
-  bankAccountNo   String?       @map("bank_account_no") @db.VarChar(50)
-
-  approvedAt      DateTime?     @map("approved_at") @db.Timestamptz()
-  approverId      String?       @map("approver_id") @db.Uuid
-  rejectionReason String?       @map("rejection_reason") @db.Text
-
-  disbursedAt     DateTime?     @map("disbursed_at") @db.Timestamptz()
-  disbursedById   String?       @map("disbursed_by_id") @db.Uuid
-
-  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
-
-  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  borrower        User          @relation("AdvanceBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
-  approver        User?         @relation("AdvanceApprover", fields: [approverId], references: [id], onDelete: SetNull)
-  disburser       User?         @relation("AdvanceDisburser", fields: [disbursedById], references: [id], onDelete: SetNull)
-  items           AdvanceItem[]
-  clearing        AdvanceClearing?
-
-  @@unique([tenantId, reqNo])
-  @@index([tenantId, borrowerId])
-  @@index([tenantId, status])
-  @@map("advance_requests")
-}
-
-model AdvanceItem {
-  id               String         @id @default(uuid()) @db.Uuid
-  advanceRequestId String         @map("advance_request_id") @db.Uuid
-  itemDescription  String         @map("item_description") @db.VarChar(255)
-  estimatedAmount  Decimal        @map("estimated_amount") @db.Decimal(12, 2)
-  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz()
-
-  advanceRequest   AdvanceRequest @relation(fields: [advanceRequestId], references: [id], onDelete: Cascade)
-
-  @@index([advanceRequestId])
-  @@map("advance_items")
-}
-
-model AdvanceClearing {
-  id                 String                @id @default(uuid()) @db.Uuid
-  advanceRequestId   String                @unique @map("advance_request_id") @db.Uuid
-  actualExpenseTotal Decimal               @map("actual_expense_total") @db.Decimal(12, 2)
-  refundAmount       Decimal               @default(0) @map("refund_amount") @db.Decimal(12, 2)
-  reimburseAmount    Decimal               @default(0) @map("reimburse_amount") @db.Decimal(12, 2)
-  clearingDate       DateTime              @default(now()) @map("clearing_date") @db.Timestamptz()
-  notes              String?               @db.Text
-  receiptProofUrl    String?               @map("receipt_proof_url") @db.VarChar(500)
-  clearedById        String?               @map("cleared_by_id") @db.Uuid
-  status             ClearingStatus        @default(PENDING)
-  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz()
-
-  advanceRequest     AdvanceRequest        @relation(fields: [advanceRequestId], references: [id], onDelete: Cascade)
-  clearingOfficer    User?                 @relation("AdvanceClearingOfficer", fields: [clearedById], references: [id], onDelete: SetNull)
-  items              AdvanceClearingItem[]
-
-  @@map("advance_clearings")
-}
-
-model AdvanceClearingItem {
-  id             String          @id @default(uuid()) @db.Uuid
-  clearingId     String          @map("clearing_id") @db.Uuid
-  receiptNo      String?         @map("receipt_no") @db.VarChar(100)
-  receiptDate    DateTime        @map("receipt_date") @db.Date
-  expenseTitle   String          @map("expense_title") @db.VarChar(255)
-  amount         Decimal         @db.Decimal(12, 2)
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz()
-
-  clearing       AdvanceClearing @relation(fields: [clearingId], references: [id], onDelete: Cascade)
-
-  @@index([clearingId])
-  @@map("advance_clearing_items")
-}
-
 enum PetitionType {
   LATE_ENROLL
   LEAVE
@@ -349,69 +509,6 @@ enum PetitionStatus {
   DEAN_APPROVED
   REJECTED
   CANCELLED
-}
-
-model StudentPetition {
-  id              String         @id @default(uuid()) @db.Uuid
-  tenantId        String         @map("tenant_id") @db.Uuid
-  ticketNo        String         @map("ticket_no") @db.VarChar(50)
-  studentId       String         @map("student_id") @db.Uuid
-  studentCode     String         @map("student_code") @db.VarChar(50)
-  studentName     String         @map("student_name") @db.VarChar(255)
-  studentEmail    String         @map("student_email") @db.VarChar(255)
-  major           String         @db.VarChar(100)
-  yearLevel       Int            @map("year_level")
-  petitionType    PetitionType   @map("petition_type")
-  title           String         @db.VarChar(255)
-  details         String         @db.Text
-  evidenceUrls    Json           @default("[]") @map("evidence_urls") @db.JsonB
-  status          PetitionStatus @default(SUBMITTED)
-
-  advisorId       String?        @map("advisor_id") @db.Uuid
-  advisorComment  String?        @map("advisor_comment") @db.Text
-  advisorActionAt DateTime?      @map("advisor_action_at") @db.Timestamptz()
-
-  officerId       String?        @map("officer_id") @db.Uuid
-  officerComment  String?        @map("officer_comment") @db.Text
-  officerActionAt DateTime?      @map("officer_action_at") @db.Timestamptz()
-
-  deanId          String?        @map("dean_id") @db.Uuid
-  deanComment     String?        @map("dean_comment") @db.Text
-  deanActionAt    DateTime?      @map("dean_action_at") @db.Timestamptz()
-
-  rejectionReason String?        @map("rejection_reason") @db.Text
-
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
-
-  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  student         User           @relation("PetitionStudent", fields: [studentId], references: [id], onDelete: Restrict)
-  advisor         User?          @relation("PetitionAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
-  officer         User?          @relation("PetitionOfficer", fields: [officerId], references: [id], onDelete: SetNull)
-  dean            User?          @relation("PetitionDean", fields: [deanId], references: [id], onDelete: SetNull)
-  logs            StudentPetitionLog[]
-
-  @@unique([tenantId, ticketNo])
-  @@index([tenantId, studentId])
-  @@index([tenantId, status])
-  @@map("student_petitions")
-}
-
-model StudentPetitionLog {
-  id          String          @id @default(uuid()) @db.Uuid
-  petitionId  String          @map("petition_id") @db.Uuid
-  actorId     String?         @map("actor_id") @db.Uuid
-  actorName   String          @map("actor_name") @db.VarChar(255)
-  action      String          @db.VarChar(100)
-  statusFrom  PetitionStatus? @map("status_from")
-  statusTo    PetitionStatus  @map("status_to")
-  comment     String?         @db.Text
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz()
-
-  petition    StudentPetition @relation(fields: [petitionId], references: [id], onDelete: Cascade)
-
-  @@index([petitionId])
-  @@map("student_petition_logs")
 }
 
 enum ProjectStatus {
@@ -434,71 +531,6 @@ enum KpiStatus {
   ON_TRACK
   AT_RISK
   ACHIEVED
-}
-
-model Project {
-  id                  String        @id @default(uuid()) @db.Uuid
-  tenantId            String        @map("tenant_id") @db.Uuid
-  code                String        @db.VarChar(50)
-  nameTh              String        @map("name_th") @db.VarChar(255)
-  nameEn              String?       @map("name_en") @db.VarChar(255)
-  fiscalYear          Int           @map("fiscal_year")
-  strategicPlan       String?       @map("strategic_plan") @db.VarChar(255)
-  budgetSource        BudgetSource  @default(REVENUE) @map("budget_source")
-  allocatedBudget     Decimal       @map("allocated_budget") @db.Decimal(12, 2)
-  spentBudget         Decimal       @default(0) @map("spent_budget") @db.Decimal(12, 2)
-  responsiblePersonId String        @map("responsible_person_id") @db.Uuid
-  startDate           DateTime      @map("start_date") @db.Date
-  endDate             DateTime      @map("end_date") @db.Date
-  status              ProjectStatus @default(PLANNED)
-  description         String?       @db.Text
-
-  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
-
-  tenant              Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  responsiblePerson   User          @relation("ProjectManager", fields: [responsiblePersonId], references: [id], onDelete: Restrict)
-  kpis                ProjectKpi[]
-  expenses            ProjectExpense[]
-
-  @@unique([tenantId, code])
-  @@index([tenantId, fiscalYear])
-  @@index([tenantId, status])
-  @@map("projects")
-}
-
-model ProjectKpi {
-  id            String    @id @default(uuid()) @db.Uuid
-  projectId     String    @map("project_id") @db.Uuid
-  indicatorName String    @map("indicator_name") @db.VarChar(255)
-  targetValue   Decimal   @map("target_value") @db.Decimal(10, 2)
-  actualValue   Decimal   @default(0) @map("actual_value") @db.Decimal(10, 2)
-  unit          String    @db.VarChar(50)
-  status        KpiStatus @default(PENDING)
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-
-  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId])
-  @@map("project_kpis")
-}
-
-model ProjectExpense {
-  id           String   @id @default(uuid()) @db.Uuid
-  projectId    String   @map("project_id") @db.Uuid
-  title        String   @db.VarChar(255)
-  amount       Decimal  @db.Decimal(12, 2)
-  expenseDate  DateTime @map("expense_date") @db.Date
-  receiptRef   String?  @map("receipt_ref") @db.VarChar(100)
-  recordedById String   @map("recorded_by_id") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  recordedBy   User     @relation("ProjectExpenseRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
-
-  @@index([projectId])
-  @@map("project_expenses")
 }
 
 enum DocumentType {
@@ -539,68 +571,93 @@ enum WorkflowStepStatus {
   REJECTED
   SKIPPED
 }
+model Curriculum {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  departmentId String?  @map("department_id") @db.Uuid
+  code         String   @db.VarChar(50)
+  nameTh       String   @map("name_th") @db.VarChar(255)
+  nameEn       String   @map("name_en") @db.VarChar(255)
+  degreeTh     String?  @map("degree_th") @db.VarChar(255)
+  degreeEn     String?  @map("degree_en") @db.VarChar(255)
+  faculty      String?  @db.VarChar(255)
+  totalCredits Int      @default(0) @map("total_credits")
+  revisionYear Int      @map("revision_year")
+  status       String   @default("ACTIVE") @db.VarChar(50)
 
-model Document {
-  id              String                  @id @default(uuid()) @db.Uuid
-  tenantId        String                  @map("tenant_id") @db.Uuid
-  docNo           String                  @map("doc_no") @db.VarChar(50)
-  title           String                  @db.VarChar(255)
-  docType         DocumentType            @default(MEMO) @map("doc_type")
-  urgency         DocumentUrgency         @default(NORMAL)
-  confidentiality DocumentConfidentiality @default(NORMAL)
-  creatorId       String                  @map("creator_id") @db.Uuid
-  currentStep     Int                     @default(1) @map("current_step")
-  totalSteps      Int                     @default(1) @map("total_steps")
-  status          DocumentStatus          @default(DRAFT)
-  content         String?                 @db.Text
-  attachmentUrl   String?                 @map("attachment_url") @db.VarChar(500)
-  tags            Json                    @default("[]") @db.JsonB
-  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz()
+  durationYears      Int?     @default(4) @map("duration_years")
+  studyType          String?  @map("study_type") @db.VarChar(255)
+  campusLocation     String?  @map("campus_location") @db.VarChar(255)
+  philosophy         String?  @db.Text
+  objectives         String?  @db.Text
+  careerPaths        String?  @map("career_paths") @db.Text
+  admissionReq       String?  @map("admission_req") @db.Text
+  tuitionFees        String?  @map("tuition_fees") @db.VarChar(255)
+  graduationCriteria String?  @map("graduation_criteria") @db.Text
+  plos               Json?    @default("[]")
 
-  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  creator         User                    @relation("DocumentCreator", fields: [creatorId], references: [id], onDelete: Restrict)
-  workflowSteps   DocumentWorkflowStep[]
-  comments        DocumentComment[]
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@unique([tenantId, docNo])
-  @@index([tenantId, status])
-  @@index([tenantId, creatorId])
-  @@map("documents")
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department   Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  subjects     CurriculumSubject[]
+
+  @@index([tenantId])
+  @@index([departmentId])
+  @@map("curriculums")
 }
 
-model DocumentWorkflowStep {
-  id           String             @id @default(uuid()) @db.Uuid
-  documentId   String             @map("document_id") @db.Uuid
-  stepNumber   Int                @map("step_number")
-  approverRole String             @map("approver_role") @db.VarChar(100)
-  approverId   String?            @map("approver_id") @db.Uuid
-  status       WorkflowStepStatus @default(PENDING)
-  comment      String?            @db.Text
-  signatureUrl String?            @map("signature_url") @db.VarChar(500)
-  actionAt     DateTime?          @map("action_at") @db.Timestamptz()
+model Department {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  code        String       @db.VarChar(50)
+  nameTh      String       @map("name_th") @db.VarChar(255)
+  nameEn      String       @map("name_en") @db.VarChar(255)
+  description String?      @db.Text
+  status      String       @default("ACTIVE") @db.VarChar(50)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  document     Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  approver     User?              @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  curriculums Curriculum[]
 
-  @@index([documentId])
-  @@index([approverId])
-  @@map("document_workflow_steps")
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("departments")
 }
 
-model DocumentComment {
-  id         String   @id @default(uuid()) @db.Uuid
-  documentId String   @map("document_id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  comment    String   @db.Text
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+model Subject {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  code        String   @db.VarChar(50)
+  nameTh      String   @map("name_th") @db.VarChar(255)
+  nameEn      String   @map("name_en") @db.VarChar(255)
+  credits     Int      @default(3)
+  creditInfo  String?  @map("credit_info") @db.VarChar(50)
+  description String?  @db.Text
+  status      String   @default("ACTIVE") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user       User     @relation("DocumentCommenter", fields: [userId], references: [id], onDelete: Cascade)
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  curriculums CurriculumSubject[]
 
-  @@index([documentId])
-  @@map("document_comments")
+  @@index([tenantId])
+  @@map("subjects")
 }
 
+model CurriculumSubject {
+  id           String     @id @default(uuid()) @db.Uuid
+  curriculumId String     @map("curriculum_id") @db.Uuid
+  subjectId    String     @map("subject_id") @db.Uuid
+  category     String?    @db.VarChar(255)
+  isCompulsory Boolean    @default(true) @map("is_compulsory")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  curriculum   Curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  subject      Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
+  @@unique([curriculumId, subjectId])
+  @@map("curriculum_subjects")
+}

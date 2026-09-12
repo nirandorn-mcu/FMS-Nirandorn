@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { PublicNavbar } from "./public-navbar";
 import { HeroSection } from "./hero-section";
 import { CockpitWidgets } from "./cockpit-widgets";
@@ -8,8 +9,17 @@ import { FacultyModulesGrid } from "./faculty-modules-grid";
 import { ArchitectureTrust } from "./architecture-trust";
 import { ContactSection } from "./contact-section";
 import { PublicFooter } from "./public-footer";
+import { useTenantStore } from "@/components/layout/tenant-store";
+import type { PublicTenantInfo } from "@/features/identity";
 
-export function HomePageClient() {
+export function HomePageClient({ initialTenant }: { initialTenant?: PublicTenantInfo }) {
+  const setTenantInfo = useTenantStore((s) => s.setTenantInfo);
+
+  useEffect(() => {
+    if (initialTenant) {
+      setTenantInfo(initialTenant);
+    }
+  }, [initialTenant, setTenantInfo]);
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/25 selection:text-primary relative overflow-x-hidden">
       {/* ─── Nexa-Style Ambient Mesh Background & Grid Lines ─── */}
@@ -44,7 +54,7 @@ export function HomePageClient() {
       <ArchitectureTrust />
 
       {/* ─── 7. Contact Information ─── */}
-      <ContactSection />
+      <ContactSection contact={initialTenant} />
 
       {/* ─── 8. Public Footer ─── */}
       <PublicFooter />

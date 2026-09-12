@@ -5,6 +5,7 @@ import { ADVANCE_PERMISSIONS } from "@/features/advance-payment/permissions";
 import { PETITION_PERMISSIONS } from "@/features/student-petition/permissions";
 import { PROJECT_PERMISSIONS } from "@/features/project-budget/permissions";
 import { DOC_PERMISSIONS } from "@/features/document-flow/permissions";
+import { CURRICULUM_PERMISSIONS } from "@/features/curriculum/permissions";
 
 /** สิทธิ์ทั้งระบบ — feature ใหม่เพิ่มบรรทัดที่นี่ · seed เขียนลง permissions ทุกครั้ง */
 export const ALL_PERMISSIONS: readonly PermissionDef[] = [
@@ -14,6 +15,7 @@ export const ALL_PERMISSIONS: readonly PermissionDef[] = [
   ...PETITION_PERMISSIONS,
   ...PROJECT_PERMISSIONS,
   ...DOC_PERMISSIONS,
+  ...CURRICULUM_PERMISSIONS,
 ];
 
 const codes = ALL_PERMISSIONS.map((p) => p.code);
