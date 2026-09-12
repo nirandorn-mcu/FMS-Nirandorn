@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, type ChangeEvent } from "react";
+import { useState, useTransition, useMemo, useRef, type ChangeEvent } from "react";
 import {
   BookOpen,
   BookMarked,
@@ -18,6 +18,8 @@ import {
   Building2,
   X,
   Sparkles,
+  Download,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useT, useLocale } from "@/shared/lib/i18n/client";
@@ -136,6 +138,7 @@ export function CurriculumClient({
   const [cTuitionFees, setCTuitionFees] = useState("");
   const [cGraduationCriteria, setCGraduationCriteria] = useState("");
   const [cPlosText, setCPlosText] = useState("");
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const [curriculumFormTab, setCurriculumFormTab] = useState<"general" | "philosophy" | "careers" | "plos">("general");
 
   // Subject Dialogs
@@ -301,6 +304,132 @@ PLO 3: สามารถปฏิบัติตนตามหลักคุ�
 PLO 4: มีภาวะผู้นำ สามารถทำงานร่วมกับผู้อื่นและปฏิบัติงานเป็นทีมได้อย่างเหมาะสม พร้อมทั้งมีทักษะการเรียนรู้ตลอดชีวิตและสามารถปรับตัวต่อการเปลี่ยนแปลงของสังคมในศตวรรษที่ ๒๑
 PLO 5: สามารถใช้เทคโนโลยีดิจิทัล สารสนเทศ พุทธนวัตกรรม เพื่อการสื่อสาร การเผยแผ่พระพุทธศาสนา การจัดการศึกษา และการบริหารองค์กรได้อย่างเหมาะสม`);
     toast.success("กรอกข้อมูลตัวอย่าง มคอ. 2 เรียบร้อยแล้ว (ตรวจสอบได้ในแต่ละแท็บ)");
+  };
+
+  const handleExportCurriculumJson = () => {
+    const plosArray = cPlosText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((line, idx) => {
+        const parts = line.split(/:\s*/);
+        if (parts.length > 1) {
+          return { code: parts[0], titleTh: parts.slice(1).join(": ") };
+        }
+        return { code: `PLO ${idx + 1}`, titleTh: line };
+      });
+
+    const exportData = {
+      code: cCode,
+      nameTh: cNameTh,
+      nameEn: cNameEn,
+      degreeTh: cDegreeTh,
+      degreeEn: cDegreeEn,
+      faculty: cFaculty,
+      departmentId: cDepartmentId.trim() || null,
+      totalCredits: Number(cTotalCredits) || 0,
+      revisionYear: Number(cRevisionYear) || 2567,
+      durationYears: Number(cDurationYears) || 4,
+      studyType: cStudyType,
+      campusLocation: cCampusLocation,
+      philosophy: cPhilosophy,
+      objectives: cObjectives,
+      careerPaths: cCareerPaths,
+      admissionReq: cAdmissionReq,
+      tuitionFees: cTuitionFees,
+      graduationCriteria: cGraduationCriteria,
+      plos: plosArray,
+      status: cStatus,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const safeCode = (cCode || "curriculum").replace(/[/\\?%*:|"<>]/g, "-");
+    a.href = url;
+    a.download = `curriculum_${safeCode}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(t("curriculums.exportJsonSuccess"));
+  };
+
+  const handleImportCurriculumJson = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const text = evt.target?.result;
+        if (typeof text !== "string") {
+          toast.error(t("curriculums.importJsonError"));
+          return;
+        }
+
+        const data = JSON.parse(text);
+        if (typeof data !== "object" || data === null) {
+          toast.error(t("curriculums.importJsonError"));
+          return;
+        }
+
+        if (data.code !== undefined) setCCode(String(data.code));
+        if (data.nameTh !== undefined) setCNameTh(String(data.nameTh));
+        if (data.nameEn !== undefined) setCNameEn(String(data.nameEn));
+        if (data.degreeTh !== undefined) setCDegreeTh(String(data.degreeTh));
+        if (data.degreeEn !== undefined) setCDegreeEn(String(data.degreeEn));
+        if (data.faculty !== undefined) setCFaculty(String(data.faculty));
+        if (data.departmentId !== undefined) {
+          const deptVal = String(data.departmentId || "");
+          if (!deptVal || departments.some((d) => d.id === deptVal)) {
+            setCDepartmentId(deptVal);
+          }
+        }
+        if (data.totalCredits !== undefined) setCTotalCredits(Number(data.totalCredits) || 0);
+        if (data.revisionYear !== undefined) setCRevisionYear(Number(data.revisionYear) || 2567);
+        if (data.durationYears !== undefined) setCDurationYears(Number(data.durationYears) || 4);
+        if (data.studyType !== undefined) setCStudyType(String(data.studyType));
+        if (data.campusLocation !== undefined) setCCampusLocation(String(data.campusLocation));
+        if (data.philosophy !== undefined) setCPhilosophy(String(data.philosophy));
+        if (data.objectives !== undefined) setCObjectives(String(data.objectives));
+        if (data.careerPaths !== undefined) setCCareerPaths(String(data.careerPaths));
+        if (data.admissionReq !== undefined) setCAdmissionReq(String(data.admissionReq));
+        if (data.tuitionFees !== undefined) setCTuitionFees(String(data.tuitionFees));
+        if (data.graduationCriteria !== undefined) setCGraduationCriteria(String(data.graduationCriteria));
+        if (data.status === "ACTIVE" || data.status === "INACTIVE") setCStatus(data.status);
+
+        if (Array.isArray(data.plos)) {
+          setCPlosText(
+            data.plos
+              .map((p: unknown) => {
+                if (typeof p === "string") return p;
+                if (typeof p === "object" && p !== null) {
+                  const item = p as Record<string, unknown>;
+                  return `${String(item.code ?? "")}: ${String(item.titleTh ?? item.title ?? "")}`;
+                }
+                return "";
+              })
+              .filter(Boolean)
+              .join("\n")
+          );
+        } else if (typeof data.plos === "string") {
+          setCPlosText(data.plos);
+        }
+
+        toast.success(t("curriculums.importJsonSuccess"));
+      } catch {
+        toast.error(t("curriculums.importJsonError"));
+      } finally {
+        if (jsonFileInputRef.current) {
+          jsonFileInputRef.current.value = "";
+        }
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   const handleSaveCurriculum = () => {
@@ -1283,18 +1412,49 @@ PLO 5: สามารถใช้เทคโนโลยีดิจิทั�
               </button>
             </div>
 
-            {!editingCurriculum && (
+            <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+              <input
+                ref={jsonFileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={handleImportCurriculumJson}
+              />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={fillMcuSample}
-                className="text-xs gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border-primary/30"
+                onClick={() => jsonFileInputRef.current?.click()}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                title="นำเข้าข้อมูลจากไฟล์ JSON"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{t("curriculums.fillMcuSample")}</span>
+                <Upload className="h-3.5 w-3.5" />
+                <span>{t("curriculums.importJson")}</span>
               </Button>
-            )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleExportCurriculumJson}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                title="ส่งออกข้อมูลเป็นไฟล์ JSON"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{t("curriculums.exportJson")}</span>
+              </Button>
+              {!editingCurriculum && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fillMcuSample}
+                  className="text-xs gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border-primary/30"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{t("curriculums.fillMcuSample")}</span>
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* TAB 1: General Info */}

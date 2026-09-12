@@ -1,10 +1,21 @@
 "use client";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { UserPlus } from "lucide-react";
+import Link from "next/link";
+import { UserPlus, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/shared/lib/i18n/client";
-import { listUsersAction, listRolesForPickerAction, createUserAction, updateUserAction, setUserActiveAction, issuePasswordLinkAction, requestEmailChangeAction } from "@/features/identity/actions";
+import { generateCsv } from "@/shared/lib/csv";
+import {
+  listUsersAction,
+  listRolesForPickerAction,
+  createUserAction,
+  updateUserAction,
+  setUserActiveAction,
+  issuePasswordLinkAction,
+  requestEmailChangeAction,
+  exportUsersAction,
+} from "@/features/identity/actions";
 import { UsersTableCard } from "./users-table-card";
 import { UserDialog } from "./user-dialog";
 import { LinkDialog } from "./link-dialog";
@@ -111,11 +122,79 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
     });
   }
 
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportCsv() {
+    setExporting(true);
+    try {
+      const res = await exportUsersAction();
+      if (!res.ok) {
+        toast.error(res.error.message || t("common.error"));
+        return;
+      }
+      const columns = [
+        { key: "email", header: "Email" },
+        { key: "name", header: "Name" },
+        { key: "roles", header: "Roles" },
+        { key: "roleCodes", header: "RoleCodes" },
+        { key: "status", header: "Status" },
+        { key: "lastLoginAt", header: "LastLogin" },
+        { key: "createdAt", header: "CreatedAt" },
+      ];
+      const csvContent = generateCsv(res.data, columns);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.href = url;
+      a.download = `users_export_${dateStr}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t("users.exportSuccess"));
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <>
       <header className="ph hr">
         <h1 className="sr-only">{t("users.title")}</h1>
-        {canManage && <div className="acts ml-auto"><Button type="button" onClick={() => { setForm(emptyForm()); setDialog({ kind: "create" }); }}><UserPlus aria-hidden="true" />{t("users.addBtn")}</Button></div>}
+        <div className="acts ml-auto flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={exporting}
+            onClick={handleExportCsv}
+          >
+            <Download aria-hidden="true" className="h-4 w-4 mr-1.5" />
+            {exporting ? t("users.exporting") : t("users.exportCsv")}
+          </Button>
+          {canManage && (
+            <>
+              <Button asChild variant="outline">
+                <Link href="/users/import">
+                  <Upload aria-hidden="true" className="h-4 w-4 mr-1.5" />
+                  {t("users.importCsv")}
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setForm(emptyForm());
+                  setDialog({ kind: "create" });
+                }}
+              >
+                <UserPlus aria-hidden="true" className="h-4 w-4 mr-1.5" />
+                {t("users.addBtn")}
+              </Button>
+            </>
+          )}
+        </div>
       </header>
       {/* canManage ของตารางปิดชั่วคราวขณะมี dialog เปิดอยู่ — คอลัมน์เลือกแถว/เมนูสามจุดของพื้นหลังหายไปด้วย
           (นอกจาก UX ที่ถูกต้องอยู่แล้ว คือพื้นหลังไม่ควรโต้ตอบได้ขณะมี dialog บัง — Radix aria-hides พื้นหลังให้

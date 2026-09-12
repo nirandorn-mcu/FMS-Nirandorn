@@ -26,3 +26,45 @@ describe("roleAssignments — กันบทบาทซ้ำในคำข�
     expect(updateUserSchema.safeParse({ userId: ROLE_A, name: "A" }).success).toBe(true);
   });
 });
+
+describe("importUsers validations", () => {
+  it("importUsersRowSchema ตรวจสอบแถวข้อมูลผู้ใช้อย่างถูกต้อง", async () => {
+    const { importUsersRowSchema } = await import("./users");
+    expect(
+      importUsersRowSchema.safeParse({
+        email: "somchai@mcu.ac.th",
+        name: "สมชาย ใจดี",
+        roleCode: "ADMIN",
+        status: "ACTIVE",
+      }).success
+    ).toBe(true);
+
+    expect(
+      importUsersRowSchema.safeParse({
+        email: "invalid-email",
+        name: "ทดสอบ",
+      }).success
+    ).toBe(false);
+  });
+
+  it("importUsersBatchSchema ตรวจสอบรายการ batch นำเข้า", async () => {
+    const { importUsersBatchSchema } = await import("./users");
+    expect(
+      importUsersBatchSchema.safeParse({
+        users: [
+          { email: "user1@mcu.ac.th", name: "User 1", roleCode: "STUDENT" },
+          { email: "user2@mcu.ac.th", name: "User 2" },
+        ],
+        defaultRoleId: "11111111-1111-4111-8111-111111111111",
+        sendInviteEmail: true,
+      }).success
+    ).toBe(true);
+
+    expect(
+      importUsersBatchSchema.safeParse({
+        users: [],
+      }).success
+    ).toBe(false);
+  });
+});
+

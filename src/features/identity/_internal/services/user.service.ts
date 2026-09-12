@@ -9,7 +9,7 @@ import { issueToken, consumeToken, TOKEN_TTL } from "../tokens";
 import { writeAudit } from "../audit";
 import { passwordSetupEmail, emailChangeEmail } from "../email-templates";
 import { getTenantSettings } from "./tenant.service";
-import type { ListUsersQuery, RoleAssignment } from "../validations/users";
+import type { ListUsersQuery, RoleAssignment, ImportUsersRow, ImportUsersBatchInput } from "../validations/users";
 import type { ScopeType } from "../grants";
 
 async function getSmtpOverride(tenantId: string) {
@@ -207,3 +207,253 @@ export async function confirmEmailChange(raw: string): Promise<boolean> {
   });
   return true;
 }
+
+export interface UserExportItem {
+  id: string;
+  email: string;
+  name: string;
+  roles: string;
+  roleCodes: string;
+  status: string;
+  lastLoginAt: string;
+  createdAt: string;
+}
+
+export async function exportUsers(tenantId: string): Promise<UserExportItem[]> {
+  const rows = await prisma.userTenant.findMany({
+    where: { tenantId },
+    orderBy: { user: { name: "asc" } },
+    include: {
+      user: true,
+      userRoles: {
+        select: {
+          role: { select: { code: true, nameTh: true, nameEn: true } },
+        },
+      },
+    },
+  });
+
+  return rows.map((r) => ({
+    id: r.user.id,
+    email: r.user.email,
+    name: r.user.name,
+    roles: r.userRoles.map((ur) => ur.role.nameTh).join("; "),
+    roleCodes: r.userRoles.map((ur) => ur.role.code).join("; "),
+    status: r.isActive && r.user.isActive ? "ACTIVE" : "INACTIVE",
+    lastLoginAt: r.user.lastLoginAt ? r.user.lastLoginAt.toISOString() : "-",
+    createdAt: r.user.createdAt.toISOString(),
+  }));
+}
+
+export interface UserImportPreviewItem {
+  email: string;
+  name: string;
+  roleCode?: string;
+  resolvedRoleId?: string;
+  resolvedRoleName?: string;
+  status: string;
+  isValid: boolean;
+  error?: string;
+}
+
+export async function validateUsersImport(
+  tenantId: string,
+  rows: ImportUsersRow[],
+  defaultRoleId?: string
+): Promise<UserImportPreviewItem[]> {
+  const roles = await prisma.role.findMany({
+    where: { tenantId },
+    select: { id: true, code: true, nameTh: true, nameEn: true },
+  });
+
+  const roleByCode = new Map<string, (typeof roles)[0]>();
+  for (const r of roles) {
+    roleByCode.set(r.code.toLowerCase(), r);
+    roleByCode.set(r.nameTh.toLowerCase(), r);
+    roleByCode.set(r.nameEn.toLowerCase(), r);
+  }
+
+  const defaultRole = defaultRoleId ? roles.find((r) => r.id === defaultRoleId) : undefined;
+
+  const emails = rows.map((r) => r.email.toLowerCase());
+  const existingUsers = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: { email: true },
+  });
+  const existingEmailSet = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+
+  const seenInFile = new Set<string>();
+
+  return rows.map((row) => {
+    const email = row.email.trim().toLowerCase();
+    const name = row.name.trim();
+    let isValid = true;
+    let error: string | undefined;
+
+    // Check duplicate in file
+    if (seenInFile.has(email)) {
+      isValid = false;
+      error = "duplicate_in_file";
+    } else {
+      seenInFile.add(email);
+    }
+
+    // Check duplicate in DB
+    if (isValid && existingEmailSet.has(email)) {
+      isValid = false;
+      error = "email_already_exists";
+    }
+
+    // Resolve role
+    let matchedRole = row.roleCode ? roleByCode.get(row.roleCode.trim().toLowerCase()) : undefined;
+    if (!matchedRole && defaultRole) {
+      matchedRole = defaultRole;
+    }
+
+    if (isValid && !matchedRole) {
+      isValid = false;
+      error = "role_not_found";
+    }
+
+    return {
+      email,
+      name,
+      roleCode: row.roleCode,
+      resolvedRoleId: matchedRole?.id,
+      resolvedRoleName: matchedRole ? `${matchedRole.nameTh} (${matchedRole.code})` : undefined,
+      status: row.status?.toUpperCase() === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+      isValid,
+      error,
+    };
+  });
+}
+
+export interface UserImportResultItem {
+  email: string;
+  name: string;
+  roleCode?: string;
+  status: "success" | "failed";
+  link?: string;
+  mailDelivered?: boolean;
+  error?: string;
+}
+
+export async function importUsersBatch(
+  actor: Actor,
+  input: ImportUsersBatchInput
+): Promise<{
+  total: number;
+  importedCount: number;
+  failedCount: number;
+  results: UserImportResultItem[];
+}> {
+  const preview = await validateUsersImport(actor.tenantId, input.users, input.defaultRoleId);
+  const results: UserImportResultItem[] = [];
+  let importedCount = 0;
+  let failedCount = 0;
+
+  const smtpOverride = await getSmtpOverride(actor.tenantId);
+
+  for (const item of preview) {
+    if (!item.isValid || !item.resolvedRoleId) {
+      results.push({
+        email: item.email,
+        name: item.name,
+        roleCode: item.roleCode,
+        status: "failed",
+        error: item.error ?? "invalid_data",
+      });
+      failedCount++;
+      continue;
+    }
+
+    try {
+      const roles: RoleAssignment[] = [
+        { roleId: item.resolvedRoleId, scopeType: "ALL", scopeId: null },
+      ];
+      await assertCanAssignRoles(roles, actor, prisma);
+
+      const { rawToken } = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: item.email,
+            name: item.name,
+            isActive: item.status === "ACTIVE",
+          },
+        });
+        const ut = await tx.userTenant.create({
+          data: {
+            userId: user.id,
+            tenantId: actor.tenantId,
+            isActive: item.status === "ACTIVE",
+          },
+        });
+        await tx.userRole.create({
+          data: {
+            userTenantId: ut.id,
+            roleId: item.resolvedRoleId!,
+            scopeType: "ALL",
+            scopeId: null,
+          },
+        });
+        const { raw } = await issueToken(
+          { userId: user.id, purpose: "PASSWORD_RESET", ttlMs: TOKEN_TTL.PASSWORD_SETUP },
+          tx
+        );
+        await writeAudit(
+          {
+            tenantId: actor.tenantId,
+            actorId: actor.actorId,
+            action: "user.import",
+            entity: "user",
+            entityId: user.id,
+            after: { email: item.email, name: item.name, roleId: item.resolvedRoleId },
+          },
+          tx
+        );
+        return { user, rawToken: raw };
+      });
+
+      let mailDelivered = false;
+      if (input.sendInviteEmail) {
+        const mailRes = await sendMail({
+          to: item.email,
+          ...passwordSetupEmail("th", {
+            name: item.name,
+            link: setupLink(rawToken),
+            hours: 72,
+          }),
+          smtpOverride,
+        });
+        mailDelivered = mailRes.delivered;
+      }
+
+      results.push({
+        email: item.email,
+        name: item.name,
+        roleCode: item.roleCode,
+        status: "success",
+        link: setupLink(rawToken),
+        mailDelivered,
+      });
+      importedCount++;
+    } catch (err: unknown) {
+      results.push({
+        email: item.email,
+        name: item.name,
+        roleCode: item.roleCode,
+        status: "failed",
+        error: err instanceof Error ? err.message : "import_failed",
+      });
+      failedCount++;
+    }
+  }
+
+  return {
+    total: input.users.length,
+    importedCount,
+    failedCount,
+    results,
+  };
+}
+

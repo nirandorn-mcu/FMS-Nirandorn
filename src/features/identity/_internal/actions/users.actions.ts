@@ -6,7 +6,17 @@ import { env } from "@/shared/lib/infra/env";
 import { prisma } from "@/shared/lib/infra/prisma";
 import { P } from "../../permissions";
 import { requirePermission } from "../rbac";
-import { listUsersQuerySchema, createUserSchema, updateUserSchema, setUserActiveSchema, issuePasswordLinkSchema, requestEmailChangeSchema } from "../validations/users";
+import {
+  listUsersQuerySchema,
+  createUserSchema,
+  updateUserSchema,
+  setUserActiveSchema,
+  issuePasswordLinkSchema,
+  requestEmailChangeSchema,
+  importUsersRowSchema,
+  importUsersBatchSchema,
+} from "../validations/users";
+import { z } from "zod";
 import * as svc from "../services/user.service";
 
 const em = async () => ({ error: zodErrorMap(await getLocale()) });
@@ -72,3 +82,43 @@ export async function requestEmailChangeAction(input: unknown): Promise<ActionRe
 export async function confirmEmailChangeAction(token: string): Promise<ActionResult<boolean>> {
   return runAction(() => svc.confirmEmailChange(token));
 }
+
+export async function exportUsersAction(): Promise<ActionResult<svc.UserExportItem[]>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersRead);
+    return svc.exportUsers(ctx.tenantId);
+  });
+}
+
+const validateImportInputSchema = z.object({
+  users: z.array(importUsersRowSchema),
+  defaultRoleId: z.string().uuid().optional(),
+});
+
+export async function validateUsersImportAction(
+  input: unknown
+): Promise<ActionResult<svc.UserImportPreviewItem[]>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersManage);
+    const parsed = validateImportInputSchema.parse(input);
+    return svc.validateUsersImport(ctx.tenantId, parsed.users, parsed.defaultRoleId);
+  });
+}
+
+export async function importUsersAction(
+  input: unknown
+): Promise<
+  ActionResult<{
+    total: number;
+    importedCount: number;
+    failedCount: number;
+    results: svc.UserImportResultItem[];
+  }>
+> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersManage);
+    const data = importUsersBatchSchema.parse(input, await em());
+    return svc.importUsersBatch(actorOf(ctx), data);
+  });
+}
+

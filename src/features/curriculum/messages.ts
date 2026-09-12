@@ -117,6 +117,11 @@ export const MESSAGES: Dictionary = {
   "curriculums.graduationCriteria": { th: "เกณฑ์การสำเร็จการศึกษา", en: "Graduation Criteria" },
   "curriculums.plos": { th: "ผลลัพธ์การเรียนรู้ที่คาดหวัง (PLOs)", en: "Program Learning Outcomes (PLOs)" },
   "curriculums.fillMcuSample": { th: "กรอกตัวอย่าง มคอ. 2 (พธ.บ. พระพุทธศาสนา)", en: "Pre-fill MCU TQF 2 Sample" },
+  "curriculums.exportJson": { th: "ส่งออก JSON", en: "Export JSON" },
+  "curriculums.importJson": { th: "นำเข้า JSON", en: "Import JSON" },
+  "curriculums.exportJsonSuccess": { th: "ส่งออกไฟล์ JSON เรียบร้อยแล้ว", en: "Curriculum exported to JSON successfully" },
+  "curriculums.importJsonSuccess": { th: "นำเข้าข้อมูลจาก JSON เรียบร้อยแล้ว", en: "Curriculum imported from JSON successfully" },
+  "curriculums.importJsonError": { th: "รูปแบบไฟล์ JSON ไม่ถูกต้องหรือไม่สามารถอ่านข้อมูลได้", en: "Invalid JSON format or unable to parse file" },
 
   "perm.curriculum:read": { th: "ดูข้อมูลหลักสูตร", en: "Read curriculums" },
   "perm.curriculum:manage": { th: "จัดการหลักสูตร", en: "Manage curriculums" },
